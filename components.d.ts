@@ -15,6 +15,7 @@ declare module 'vue' {
     BinaryControl: typeof import('./src/components/DeviceControls/BinaryControl.vue')['default']
     ConnectionNavbarActions: typeof import('./src/components/ConnectionNavbarActions.vue')['default']
     DeviceCard: typeof import('./src/components/DeviceCard.vue')['default']
+    DevicePageShell: typeof import('./src/components/device/DevicePageShell.vue')['default']
     EnumControl: typeof import('./src/components/DeviceControls/EnumControl.vue')['default']
     FeatureHeader: typeof import('./src/components/DeviceControls/FeatureHeader.vue')['default']
     InstanceMenu: typeof import('./src/components/InstanceMenu.vue')['default']

@@ -11,12 +11,15 @@ const route = useRoute()
 const open = ref(false)
 
 const connectionId = computed(() => String(route.params.connectionId || getDefaultConnectionId()))
+const isDeviceRoute = computed(() =>
+  route.name === 'device-exposes' || route.name === 'device-info' || route.name === 'device-state',
+)
 
 const links = computed<NavigationMenuItem[][]>(() => [[{
   label: 'Devices',
   icon: 'i-lucide-layout-grid',
   to: `/connections/${connectionId.value}`,
-  exact: route.name !== 'device' && route.name !== 'logs' && route.name !== 'information',
+  exact: !isDeviceRoute.value && route.name !== 'logs' && route.name !== 'information',
   onSelect: () => {
     open.value = false
   },
