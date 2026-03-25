@@ -77,10 +77,40 @@ export const useIndicatorHistoryStore = defineStore('indicator-history', () => {
     }
   }
 
+  function renameDevice(connectionId: string, from: string, to: string) {
+    const connectionHistory = historyByConnection.value[connectionId]
+
+    if (!connectionHistory || from === to || !(from in connectionHistory)) {
+      return
+    }
+
+    const fromHistory = connectionHistory[from]
+
+    if (!fromHistory) {
+      return
+    }
+
+    // History is keyed by friendly_name for the same reason as device state:
+    // incoming device messages are routed by topic name, not by IEEE address.
+    // When the visible device name changes we migrate the full history bucket
+    // so the trail continues seamlessly after the rename.
+    const nextConnectionHistory = { ...connectionHistory }
+    delete nextConnectionHistory[from]
+    nextConnectionHistory[to] = fromHistory
+
+    historyByConnection.value = {
+      ...historyByConnection.value,
+      [connectionId]: {
+        ...nextConnectionHistory,
+      },
+    }
+  }
+
   return {
     enabled,
     historyByConnection,
     featureHistory,
     recordStateUpdate,
+    renameDevice,
   }
 })

@@ -2,7 +2,7 @@ import { readonly, ref, type Ref } from 'vue'
 
 import { getZ2MConnectionConfig } from '@/config/z2mConnections'
 import { useLogsStore } from '@/stores/logs'
-import type { DeviceStateValue, Z2MMessage } from '@/types/z2m'
+import type { Z2MMessage } from '@/types/z2m'
 
 type MessageHandler = (message: Z2MMessage) => void
 
@@ -23,7 +23,7 @@ interface WebSocketMetrics {
 interface Z2MClient {
   connect: () => void
   disconnect: () => void
-  send: (topic: string, payload: Record<string, DeviceStateValue> | DeviceStateValue) => boolean
+  send: (topic: string, payload: unknown) => boolean
   subscribe: (handler: MessageHandler) => () => void
   isConnected: Readonly<Ref<boolean>>
   isReconnecting: Readonly<Ref<boolean>>
@@ -222,7 +222,7 @@ function createClient(connectionId: string, url: string): Z2MClient {
     activeSocket.close()
   }
 
-  function send(topic: string, payload: Record<string, DeviceStateValue> | DeviceStateValue) {
+  function send(topic: string, payload: unknown) {
     if (!socket || socket.readyState !== WebSocket.OPEN) {
       pushLog('warning', `Send skipped while socket is not open: ${topic}`)
       pushStoreLog('warning', 'tx', `Send skipped ${topic}`, JSON.stringify({ topic, payload }, null, 2))

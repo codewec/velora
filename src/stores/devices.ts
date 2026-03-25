@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
+import { useIndicatorHistoryStore } from '@/stores/indicatorHistory'
 import type { Device, DeviceState } from '@/types/z2m'
 
 export const useDevicesStore = defineStore('devices', () => {
@@ -13,6 +14,7 @@ export const useDevicesStore = defineStore('devices', () => {
 
   const rxTimers = new Map<string, ReturnType<typeof setTimeout>>()
   const txTimers = new Map<string, ReturnType<typeof setTimeout>>()
+  const indicatorHistoryStore = useIndicatorHistoryStore()
 
   const totalDevices = computed(() =>
     Object.values(devicesByConnection.value).reduce((count, devices) => count + devices.length, 0),
@@ -146,6 +148,95 @@ export const useDevicesStore = defineStore('devices', () => {
     }
   }
 
+  function updateDeviceDescription(connectionId: string, ieeeAddress: string, description: string) {
+    devicesByConnection.value = {
+      ...devicesByConnection.value,
+      [connectionId]: devicesFor(connectionId).map((device) =>
+        device.ieee_address === ieeeAddress
+          ? { ...device, description }
+          : device,
+      ),
+    }
+  }
+
+  function moveConnectionEntry<T>(
+    source: Record<string, Record<string, T>>,
+    connectionId: string,
+    from: string,
+    to: string,
+  ): Record<string, Record<string, T>> {
+    const connectionData = source[connectionId]
+
+    if (!connectionData || from === to) {
+      return source
+    }
+
+    const fromValue = connectionData[from]
+
+    if (fromValue === undefined) {
+      return source
+    }
+
+    const nextConnectionData = { ...connectionData }
+    delete nextConnectionData[from]
+    nextConnectionData[to] = fromValue
+
+    return {
+      ...source,
+      [connectionId]: nextConnectionData,
+    }
+  }
+
+  function renameDevice(connectionId: string, ieeeAddress: string, friendlyName: string) {
+    const previous = devicesFor(connectionId).find(device => device.ieee_address === ieeeAddress)
+
+    if (!previous || previous.friendly_name === friendlyName) {
+      return
+    }
+
+    const previousName = previous.friendly_name
+
+    // Zigbee2MQTT identifies the device by IEEE address, but most frontend
+    // state dictionaries are keyed by friendly_name because incoming device
+    // topics are also friendly_name-based. After a rename we have to move every
+    // cached entry to the new key so state, activity and last-seen data remain
+    // attached to the same physical device.
+    devicesByConnection.value = {
+      ...devicesByConnection.value,
+      [connectionId]: devicesFor(connectionId).map((device) =>
+        device.ieee_address === ieeeAddress
+          ? { ...device, friendly_name: friendlyName }
+          : device,
+      ),
+    }
+
+    deviceStatesByConnection.value = moveConnectionEntry(
+      deviceStatesByConnection.value,
+      connectionId,
+      previousName,
+      friendlyName,
+    )
+    activityByConnection.value = moveConnectionEntry(
+      activityByConnection.value,
+      connectionId,
+      previousName,
+      friendlyName,
+    )
+    observedLastSeenByConnection.value = moveConnectionEntry(
+      observedLastSeenByConnection.value,
+      connectionId,
+      previousName,
+      friendlyName,
+    )
+    reportedLastSeenByConnection.value = moveConnectionEntry(
+      reportedLastSeenByConnection.value,
+      connectionId,
+      previousName,
+      friendlyName,
+    )
+    indicatorHistoryStore.renameDevice(connectionId, previousName, friendlyName)
+  }
+
   function updateDeviceState(connectionId: string, friendlyName: string, nextState: DeviceState) {
     const currentStates = deviceStatesFor(connectionId)
     const current = currentStates[friendlyName] ?? {}
@@ -214,6 +305,8 @@ export const useDevicesStore = defineStore('devices', () => {
     peripheralDevices,
     permitJoinDevices,
     setDevices,
+    updateDeviceDescription,
+    renameDevice,
     updateDeviceState,
     markDeviceRx,
     markDeviceTx,
