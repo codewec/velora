@@ -1,5 +1,7 @@
 import type { Expose } from '@/types/z2m'
 
+const ENDPOINT_SUFFIXES = new Set(['left', 'right', 'center', 'top', 'bottom'])
+
 const FEATURE_ICONS: Record<string, string> = {
   state: 'i-lucide-power',
   battery: 'i-lucide-battery',
@@ -42,6 +44,21 @@ export function featureKey(expose: Expose) {
   return expose.property || expose.name || expose.type
 }
 
+export function featureEndpoint(expose: Expose) {
+  const key = featureKey(expose)
+  const parts = key.split('_')
+  const suffix = parts.at(-1)?.toLowerCase()
+
+  return suffix && ENDPOINT_SUFFIXES.has(suffix) ? suffix : null
+}
+
+export function featureBaseKey(expose: Expose) {
+  const endpoint = featureEndpoint(expose)
+  const key = featureKey(expose)
+
+  return endpoint ? key.slice(0, -(endpoint.length + 1)) : key
+}
+
 export function featureSubtitle(expose: Expose) {
   if (!expose.label) {
     return null
@@ -55,6 +72,6 @@ export function featureDescription(expose: Expose) {
 }
 
 export function featureIcon(expose: Expose) {
-  const key = featureKey(expose).toLowerCase()
+  const key = featureBaseKey(expose).toLowerCase()
   return FEATURE_ICONS[key] || 'i-lucide-settings-2'
 }

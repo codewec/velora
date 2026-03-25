@@ -4,6 +4,7 @@ import type { NavigationMenuItem } from '@nuxt/ui'
 
 import ConnectionNavbarActions from '@/components/ConnectionNavbarActions.vue'
 import { useIndicatorHistoryPreference } from '@/composables/useIndicatorHistoryPreference'
+import { useSmartGroupingPreference } from '@/composables/useSmartGroupingPreference'
 import { useDevicesStore } from '@/stores/devices'
 import { deviceDisplaySubtitle, deviceDisplayTitle } from '@/utils/devicePresentation'
 
@@ -12,10 +13,12 @@ const props = defineProps<{
   id: string
   activeTab: 'exposes' | 'info' | 'state'
   showHistoryToggle?: boolean
+  showSmartGroupingToggle?: boolean
 }>()
 
 const devicesStore = useDevicesStore()
 const { enabled: historyEnabled } = useIndicatorHistoryPreference()
+const { enabled: smartGroupingEnabled } = useSmartGroupingPreference()
 
 const device = computed(() => devicesStore.deviceById(props.connectionId, props.id))
 const state = computed(() =>
@@ -74,9 +77,16 @@ const tabs = computed<NavigationMenuItem[]>(() => [
         </template>
 
         <template #right>
-          <div v-if="showHistoryToggle" class="flex items-center gap-3">
-            <span class="text-sm text-slate-500 dark:text-slate-400">Record history</span>
-            <USwitch v-model="historyEnabled" />
+          <div class="flex items-center gap-6">
+            <div v-if="showSmartGroupingToggle" class="flex items-center gap-3">
+              <span class="text-sm text-slate-500 dark:text-slate-400">Smart grouping</span>
+              <USwitch v-model="smartGroupingEnabled" />
+            </div>
+
+            <div v-if="showHistoryToggle" class="flex items-center gap-3">
+              <span class="text-sm text-slate-500 dark:text-slate-400">Record history</span>
+              <USwitch v-model="historyEnabled" />
+            </div>
           </div>
         </template>
       </UDashboardToolbar>

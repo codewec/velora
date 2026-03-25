@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import type { Expose } from '@/types/z2m'
-import { featureDescription, featureIcon, featureTitle } from '@/utils/featureMeta'
+import { featureDescription, featureEndpoint, featureIcon, featureTitle } from '@/utils/featureMeta'
 
 defineProps<{
   expose: Expose
+  hideEndpoint?: boolean
 }>()
 </script>
 
@@ -12,6 +13,9 @@ defineProps<{
     <div class="flex items-center gap-2">
       <UIcon :name="featureIcon(expose)" class="text-base text-slate-500 dark:text-slate-400" />
       <p class="text-sm font-semibold text-slate-950 dark:text-white">{{ featureTitle(expose) }}</p>
+      <span v-if="!hideEndpoint && featureEndpoint(expose)" class="text-xs text-slate-400 dark:text-slate-500">
+        (Endpoint: {{ featureEndpoint(expose) }})
+      </span>
     </div>
     <p v-if="featureDescription(expose)" class="mt-1 text-xs text-slate-500 dark:text-slate-400">
       {{ featureDescription(expose) }}

@@ -48,7 +48,7 @@ function handleUpdate(value: string | number | boolean | Record<string, unknown>
     <div class="flex items-center justify-between gap-4">
       <FeatureHeader :expose="expose" />
 
-      <div class="min-w-44">
+      <div class="flex justify-end">
         <USelect
           :items="items"
           :model-value="model"
