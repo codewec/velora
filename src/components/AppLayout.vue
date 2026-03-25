@@ -1,0 +1,73 @@
+<script setup lang="ts">
+import { computed, ref } from 'vue'
+import { useRoute } from 'vue-router'
+import type { NavigationMenuItem } from '@nuxt/ui'
+
+import { getDefaultConnectionId } from '@/config/z2mConnections'
+import InstanceMenu from '@/components/InstanceMenu.vue'
+import SettingsMenu from '@/components/SettingsMenu.vue'
+
+const route = useRoute()
+const open = ref(false)
+
+const connectionId = computed(() => String(route.params.connectionId || getDefaultConnectionId()))
+
+const links = computed<NavigationMenuItem[][]>(() => [[{
+  label: 'Devices',
+  icon: 'i-lucide-layout-grid',
+  to: `/connections/${connectionId.value}`,
+  exact: route.name !== 'device' && route.name !== 'logs' && route.name !== 'information',
+  onSelect: () => {
+    open.value = false
+  },
+}, {
+  label: 'Information',
+  icon: 'i-lucide-info',
+  to: `/connections/${connectionId.value}/information`,
+  exact: route.name === 'information',
+  onSelect: () => {
+    open.value = false
+  },
+}, {
+  label: 'Events',
+  icon: 'i-lucide-logs',
+  to: `/connections/${connectionId.value}/logs`,
+  exact: route.name === 'logs',
+  onSelect: () => {
+    open.value = false
+  },
+}]])
+</script>
+
+<template>
+  <UDashboardGroup unit="rem" storage="local">
+    <UDashboardSidebar
+      id="default"
+      v-model:open="open"
+      collapsible
+      resizable
+      class="bg-elevated/25"
+      :ui="{ footer: 'lg:border-t lg:border-default' }"
+    >
+      <template #header="{ collapsed }">
+        <InstanceMenu :collapsed="collapsed" />
+      </template>
+
+      <template #default="{ collapsed }">
+        <UNavigationMenu
+          :collapsed="collapsed"
+          :items="links[0]"
+          orientation="vertical"
+          tooltip
+          popover
+        />
+      </template>
+
+      <template #footer="{ collapsed }">
+        <SettingsMenu :collapsed="collapsed" />
+      </template>
+    </UDashboardSidebar>
+
+    <slot />
+  </UDashboardGroup>
+</template>
