@@ -6,13 +6,15 @@ import BinaryControl from '@/components/DeviceControls/BinaryControl.vue'
 import EnumControl from '@/components/DeviceControls/EnumControl.vue'
 import GroupedBinaryControl from '@/components/DeviceControls/GroupedBinaryControl.vue'
 import GroupedEnumControl from '@/components/DeviceControls/GroupedEnumControl.vue'
+import GroupedScheduleControl from '@/components/DeviceControls/GroupedScheduleControl.vue'
 import NumericControl from '@/components/DeviceControls/NumericControl.vue'
 import ReadonlyFeature from '@/components/DeviceControls/ReadonlyFeature.vue'
 import DevicePageShell from '@/components/device/DevicePageShell.vue'
 import { useSmartGroupingPreference } from '@/composables/useSmartGroupingPreference'
 import type { BinaryExpose, DeviceState, EnumExpose, Expose } from '@/types/z2m'
-import { isBinaryExpose, isEnumExpose, isNumericExpose } from '@/types/z2m'
+import { isBinaryExpose, isEnumExpose, isNumericExpose, isTextExpose } from '@/types/z2m'
 import { featureBaseKey, featureEndpoint, featureKey } from '@/utils/featureMeta'
+import { isScheduleKey, scheduleDaysFromState } from '@/utils/schedule'
 
 const props = defineProps<{
   connectionId: string
@@ -91,6 +93,31 @@ function inferredReadableExposes(deviceExposes: Expose[] | undefined, state: Dev
     }) satisfies Expose)
 }
 
+function normalReadableExposes(deviceExposes: Expose[] | undefined) {
+  return readableExposes(deviceExposes).filter(expose => !isScheduleKey(featureKey(expose)))
+}
+
+function normalInferredReadableExposes(deviceExposes: Expose[] | undefined, state: DeviceState) {
+  return inferredReadableExposes(deviceExposes, state).filter(expose => !isScheduleKey(featureKey(expose)))
+}
+
+function groupedSchedule(state: DeviceState) {
+  return scheduleDaysFromState(state)
+}
+
+function readableCount(deviceExposes: Expose[] | undefined, state: DeviceState) {
+  return normalReadableExposes(deviceExposes).length
+    + normalInferredReadableExposes(deviceExposes, state).length
+}
+
+function hasGroupedScheduleControl(deviceExposes: Expose[] | undefined, state: DeviceState) {
+  const scheduleWritableExposes = writableExposes(deviceExposes).filter(
+    expose => isTextExpose(expose) && isScheduleKey(featureKey(expose)),
+  )
+
+  return scheduleWritableExposes.length > 0 || groupedSchedule(state).length > 0
+}
+
 function groupedWritableExposes(deviceExposes: Expose[] | undefined) {
   const groups = new Map<string, Expose[]>()
 
@@ -125,15 +152,31 @@ function groupedWritableExposes(deviceExposes: Expose[] | undefined) {
 }
 
 function singleWritableExposes(deviceExposes: Expose[] | undefined) {
+  const scheduleKeys = new Set(
+    writableExposes(deviceExposes)
+      .filter(expose => isTextExpose(expose) && isScheduleKey(featureKey(expose)))
+      .map(featureKey),
+  )
+
   if (!smartGroupingEnabled.value) {
-    return sortExposes(writableExposes(deviceExposes))
+    return sortExposes(writableExposes(deviceExposes).filter(expose => !scheduleKeys.has(featureKey(expose))))
   }
 
   const groupedKeys = new Set(
     groupedWritableExposes(deviceExposes).flatMap(group => group.map(featureKey)),
   )
 
-  return sortExposes(writableExposes(deviceExposes).filter(expose => !groupedKeys.has(featureKey(expose))))
+  return sortExposes(
+    writableExposes(deviceExposes).filter(
+      expose => !groupedKeys.has(featureKey(expose)) && !scheduleKeys.has(featureKey(expose)),
+    ),
+  )
+}
+
+function controlCardsCount(deviceExposes: Expose[] | undefined, state: DeviceState) {
+  return singleWritableExposes(deviceExposes).length
+    + groupedWritableExposes(deviceExposes).length
+    + (hasGroupedScheduleControl(deviceExposes, state) ? 1 : 0)
 }
 
 function controlComponent(expose: Expose) {
@@ -185,16 +228,16 @@ function groupedControlComponent(group: Expose[]) {
           <div class="flex items-center justify-between">
             <p class="text-sm uppercase tracking-[0.25em] text-slate-500">{{ t('devicePage.indicators') }}</p>
             <p class="text-sm text-slate-500 dark:text-slate-400">
-              {{ t('devicePage.readableExposes', { count: readableExposes(device.definition?.exposes).length + inferredReadableExposes(device.definition?.exposes, state).length }) }}
+              {{ t('devicePage.readableExposes', { count: readableCount(device.definition?.exposes, state) }) }}
             </p>
           </div>
 
           <div
-            v-if="readableExposes(device.definition?.exposes).length || inferredReadableExposes(device.definition?.exposes, state).length"
+            v-if="normalReadableExposes(device.definition?.exposes).length || normalInferredReadableExposes(device.definition?.exposes, state).length"
             class="grid gap-4"
           >
             <ReadonlyFeature
-              v-for="expose in readableExposes(device.definition?.exposes)"
+              v-for="expose in normalReadableExposes(device.definition?.exposes)"
               :key="`readonly-${expose.property || expose.name}-${expose.type}`"
               :connection-id="connectionId"
               :device-name="device.friendly_name"
@@ -203,7 +246,7 @@ function groupedControlComponent(group: Expose[]) {
             />
 
             <ReadonlyFeature
-              v-for="expose in inferredReadableExposes(device.definition?.exposes, state)"
+              v-for="expose in normalInferredReadableExposes(device.definition?.exposes, state)"
               :key="`inferred-${featureKey(expose)}`"
               :connection-id="connectionId"
               :device-name="device.friendly_name"
@@ -225,11 +268,18 @@ function groupedControlComponent(group: Expose[]) {
           <div class="flex items-center justify-between">
             <p class="text-sm uppercase tracking-[0.25em] text-slate-500">{{ t('devicePage.controls') }}</p>
             <p class="text-sm text-slate-500 dark:text-slate-400">
-              {{ t('devicePage.writableExposes', { count: writableExposes(device.definition?.exposes).length }) }}
+              {{ t('devicePage.writableExposes', { count: controlCardsCount(device.definition?.exposes, state) }) }}
             </p>
           </div>
 
-          <div v-if="writableExposes(device.definition?.exposes).length" class="grid gap-4">
+          <div v-if="writableExposes(device.definition?.exposes).length || hasGroupedScheduleControl(device.definition?.exposes, state)" class="grid gap-4">
+            <GroupedScheduleControl
+              v-if="hasGroupedScheduleControl(device.definition?.exposes, state)"
+              :connection-id="connectionId"
+              :device-name="device.friendly_name"
+              :state="state"
+            />
+
             <template
               v-for="group in groupedWritableExposes(device.definition?.exposes)"
               :key="`group-${group.map(featureKey).join('-')}`"

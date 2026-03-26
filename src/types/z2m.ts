@@ -209,3 +209,7 @@ export function isNumericExpose(expose: Expose): expose is NumericExpose {
 export function isEnumExpose(expose: Expose): expose is EnumExpose {
   return expose.type === 'enum'
 }
+
+export function isTextExpose(expose: Expose): expose is TextExpose {
+  return expose.type === 'text'
+}
