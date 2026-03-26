@@ -1,4 +1,4 @@
-# z2m-ui
+# Velora
 
 Alternative Zigbee2MQTT web UI built with `Vue 3`, `Vite`, `Pinia`, and `@nuxt/ui`.
 

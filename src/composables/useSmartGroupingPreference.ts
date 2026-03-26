@@ -1,6 +1,6 @@
 import { ref, watch } from 'vue'
 
-const STORAGE_KEY = 'z2m-ui-smart-grouping-enabled'
+const STORAGE_KEY = 'velora-smart-grouping-enabled'
 
 function readStoredPreference() {
   if (typeof window === 'undefined') {
@@ -13,11 +13,15 @@ function readStoredPreference() {
 
 const enabled = ref(readStoredPreference())
 
-watch(enabled, (value) => {
-  if (typeof window !== 'undefined') {
-    window.localStorage.setItem(STORAGE_KEY, String(value))
-  }
-}, { immediate: true })
+watch(
+  enabled,
+  (value) => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(STORAGE_KEY, String(value))
+    }
+  },
+  { immediate: true },
+)
 
 export function useSmartGroupingPreference() {
   return {

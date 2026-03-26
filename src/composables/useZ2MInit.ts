@@ -99,12 +99,15 @@ export function useZ2MInit() {
         summary: i18n.global.t('logsPage.bridgeEvent', { type: message.payload.type }),
         raw: JSON.stringify(message.payload, null, 2),
       })
-      console.info('[z2m-ui] bridge/event', connectionId, message.payload)
+      console.info('[velora] bridge/event', connectionId, message.payload)
       bridgeStore.handleEvent(connectionId, message.payload)
       return
     }
 
-    if (message.topic === 'bridge/response/permit_join' && isBridgePermitJoinResponse(message.payload)) {
+    if (
+      message.topic === 'bridge/response/permit_join' &&
+      isBridgePermitJoinResponse(message.payload)
+    ) {
       logsStore.addLog(connectionId, {
         level: message.payload.status === 'ok' ? 'info' : 'warning',
         kind: 'bridge',
@@ -115,13 +118,17 @@ export function useZ2MInit() {
       return
     }
 
-    if (message.topic === 'bridge/response/networkmap' && isBridgeNetworkMapResponse(message.payload)) {
+    if (
+      message.topic === 'bridge/response/networkmap' &&
+      isBridgeNetworkMapResponse(message.payload)
+    ) {
       logsStore.addLog(connectionId, {
         level: message.payload.status === 'ok' ? 'info' : 'error',
         kind: 'bridge',
-        summary: message.payload.status === 'ok'
-          ? i18n.global.t('logsPage.networkMapUpdated')
-          : i18n.global.t('logsPage.networkMapFailed'),
+        summary:
+          message.payload.status === 'ok'
+            ? i18n.global.t('logsPage.networkMapUpdated')
+            : i18n.global.t('logsPage.networkMapFailed'),
         raw: JSON.stringify(message.payload, null, 2),
       })
       bridgeStore.setNetworkMapResponse(connectionId, message.payload)
@@ -133,13 +140,14 @@ export function useZ2MInit() {
       const parsed = parseBridgeLoggingPayload(raw)
 
       logsStore.addLog(connectionId, {
-        level: message.payload.level === 'error'
-          ? 'error'
-          : message.payload.level === 'warning'
-            ? 'warning'
-            : message.payload.level === 'debug'
-              ? 'debug'
-              : 'info',
+        level:
+          message.payload.level === 'error'
+            ? 'error'
+            : message.payload.level === 'warning'
+              ? 'warning'
+              : message.payload.level === 'debug'
+                ? 'debug'
+                : 'info',
         kind: 'bridge',
         summary: parsed?.deviceName
           ? i18n.global.t('logsPage.deviceErrorSummary', { device: parsed.deviceName })
@@ -166,11 +174,7 @@ export function useZ2MInit() {
         currentState,
         message.payload as DeviceState,
       )
-      devicesStore.updateDeviceState(
-        connectionId,
-        friendlyName,
-        message.payload as DeviceState,
-      )
+      devicesStore.updateDeviceState(connectionId, friendlyName, message.payload as DeviceState)
     }
   }
 

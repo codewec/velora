@@ -38,13 +38,15 @@ const error = computed(() => bridgeStore.networkMapError(props.connectionId))
 const activeNetworkMap = computed(() => networkMap.value ?? cachedNetworkMap.value?.value ?? null)
 const showingCachedData = computed(() => !networkMap.value && !!cachedNetworkMap.value)
 const cachedUpdatedAtLabel = computed(() =>
-  cachedNetworkMap.value?.updatedAt ? new Date(cachedNetworkMap.value.updatedAt).toLocaleString() : null,
+  cachedNetworkMap.value?.updatedAt
+    ? new Date(cachedNetworkMap.value.updatedAt).toLocaleString()
+    : null,
 )
 
 const inventoryDevices = computed(() => devicesStore.devicesFor(props.connectionId))
 const nodes = computed(() => {
   const mapNodes = activeNetworkMap.value?.nodes ?? []
-  const knownNodes = new Map(mapNodes.map(node => [node.ieeeAddr, node]))
+  const knownNodes = new Map(mapNodes.map((node) => [node.ieeeAddr, node]))
 
   // Zigbee2MQTT raw network maps do not always include isolated devices.
   // To keep the graph useful, we enrich the topology with the device inventory
@@ -74,19 +76,22 @@ const links = computed(() =>
 )
 
 const nodeByIeee = computed(() =>
-  Object.fromEntries(nodes.value.map(node => [node.ieeeAddr, node])),
+  Object.fromEntries(nodes.value.map((node) => [node.ieeeAddr, node])),
 )
-const selectedNode = computed(() => selectedNodeIeee.value ? nodeByIeee.value[selectedNodeIeee.value] ?? null : null)
+const selectedNode = computed(() =>
+  selectedNodeIeee.value ? (nodeByIeee.value[selectedNodeIeee.value] ?? null) : null,
+)
 const selectedDevice = computed(() =>
   selectedNodeIeee.value
-    ? inventoryDevices.value.find(device => device.ieee_address === selectedNodeIeee.value) ?? null
+    ? (inventoryDevices.value.find((device) => device.ieee_address === selectedNodeIeee.value) ??
+      null)
     : null,
 )
 
-const coordinators = computed(() => nodes.value.filter(node => node.type === 'Coordinator'))
-const routers = computed(() => nodes.value.filter(node => node.type === 'Router'))
-const endDevices = computed(() => nodes.value.filter(node => node.type === 'EndDevice'))
-const graphLayouts = ref({ nodes: {} as Record<string, { x: number, y: number, fixed?: boolean }> })
+const coordinators = computed(() => nodes.value.filter((node) => node.type === 'Coordinator'))
+const routers = computed(() => nodes.value.filter((node) => node.type === 'Router'))
+const endDevices = computed(() => nodes.value.filter((node) => node.type === 'EndDevice'))
+const graphLayouts = ref({ nodes: {} as Record<string, { x: number; y: number; fixed?: boolean }> })
 
 const enrichedLinks = computed(() =>
   links.value.map((link) => ({
@@ -100,8 +105,10 @@ const selectedNodeLinks = computed(() => {
     return []
   }
 
-  return enrichedLinks.value.filter(link =>
-    link.source.ieeeAddr === selectedNodeIeee.value || link.target.ieeeAddr === selectedNodeIeee.value,
+  return enrichedLinks.value.filter(
+    (link) =>
+      link.source.ieeeAddr === selectedNodeIeee.value ||
+      link.target.ieeeAddr === selectedNodeIeee.value,
   )
 })
 
@@ -194,7 +201,7 @@ function openSelectedDevicePage() {
 }
 
 function cacheKey(connectionId: string) {
-  return `z2m-ui:network-map:${connectionId}`
+  return `velora:network-map:${connectionId}`
 }
 
 function loadCachedNetworkMap() {
@@ -214,8 +221,7 @@ function loadCachedNetworkMap() {
     }
 
     cachedNetworkMap.value = parsed
-  }
-  catch {
+  } catch {
     window.localStorage.removeItem(cacheKey(props.connectionId))
   }
 }
@@ -244,7 +250,7 @@ function clearCachedNetworkMap() {
 }
 
 function createSeedLayouts(nodesToPlace: NetworkMapNode[]) {
-  const coordinator = nodesToPlace.find(node => node.type === 'Coordinator')
+  const coordinator = nodesToPlace.find((node) => node.type === 'Coordinator')
 
   return {
     nodes: coordinator
@@ -261,7 +267,7 @@ function createSeedLayouts(nodesToPlace: NetworkMapNode[]) {
 
 const graphNodes = computed(() =>
   Object.fromEntries(
-    nodes.value.map(node => [
+    nodes.value.map((node) => [
       node.ieeeAddr,
       {
         name: node.friendlyName || node.ieeeAddr,
@@ -286,118 +292,120 @@ const graphEdges = computed(() =>
   ),
 )
 
-const graphConfigs = reactive(vNG.defineConfigs({
-  view: {
-    autoPanAndZoomOnLoad: 'fit-content',
-    fitContentMargin: 0.18,
-    minZoomLevel: 0.2,
-    maxZoomLevel: 5,
-    layoutHandler: new ForceLayout({
-      positionFixedByDrag: false,
-      positionFixedByClickWithAltKey: false,
-      noAutoRestartSimulation: true,
-      createSimulation: (d3, simulationNodes, simulationEdges) => {
-        const forceLink = d3
-          .forceLink<ForceNodeDatum, ForceEdgeDatum>(simulationEdges)
-          .id((node: ForceNodeDatum) => node.id)
+const graphConfigs = reactive(
+  vNG.defineConfigs({
+    view: {
+      autoPanAndZoomOnLoad: 'fit-content',
+      fitContentMargin: 0.18,
+      minZoomLevel: 0.2,
+      maxZoomLevel: 5,
+      layoutHandler: new ForceLayout({
+        positionFixedByDrag: false,
+        positionFixedByClickWithAltKey: false,
+        noAutoRestartSimulation: true,
+        createSimulation: (d3, simulationNodes, simulationEdges) => {
+          const forceLink = d3
+            .forceLink<ForceNodeDatum, ForceEdgeDatum>(simulationEdges)
+            .id((node: ForceNodeDatum) => node.id)
 
-        // This follows the documented static-force pattern from v-network-graph:
-        // compute the layout up front with d3-force, stop the simulation, and
-        // render the settled result without ongoing motion. Distances are kept
-        // intentionally compact so the graph stays centered instead of
-        // spreading from edge to edge.
-        return d3
-          .forceSimulation(simulationNodes)
-          .force('edge', forceLink.distance(72).strength(0.7))
-          .force('charge', d3.forceManyBody().strength(-280))
-          .force('collide', d3.forceCollide(34).strength(0.9))
-          .force('x', d3.forceX().strength(0.06))
-          .force('y', d3.forceY().strength(0.06))
-          .stop()
-          .tick(140)
-      },
-    }),
-  },
-  node: {
-    selectable: false,
-    draggable: true,
-    normal: {
-      type: 'circle',
-      radius: node => {
-        if (node.type === 'Coordinator') {
-          return 22
-        }
-
-        if (node.type === 'Router') {
-          return 18
-        }
-
-        return 14
-      },
-      color: node => nodeFill(node.type),
-      strokeColor: node => node.isolated ? '#f8fafc' : '#ffffff',
-      strokeWidth: node => node.isolated ? 3 : 2,
-    },
-    hover: {
-      color: node => nodeFill(node.type),
-      strokeColor: '#ffffff',
-      strokeWidth: 3,
-    },
-    label: {
-      visible: true,
-      fontSize: 12,
-      color: '#0f172a',
-      direction: 'south',
-      background: {
-        visible: true,
-        color: 'rgba(255,255,255,0.88)',
-        padding: {
-          vertical: 2,
-          horizontal: 6,
+          // This follows the documented static-force pattern from v-network-graph:
+          // compute the layout up front with d3-force, stop the simulation, and
+          // render the settled result without ongoing motion. Distances are kept
+          // intentionally compact so the graph stays centered instead of
+          // spreading from edge to edge.
+          return d3
+            .forceSimulation(simulationNodes)
+            .force('edge', forceLink.distance(72).strength(0.7))
+            .force('charge', d3.forceManyBody().strength(-280))
+            .force('collide', d3.forceCollide(34).strength(0.9))
+            .force('x', d3.forceX().strength(0.06))
+            .force('y', d3.forceY().strength(0.06))
+            .stop()
+            .tick(140)
         },
-        borderRadius: 999,
+      }),
+    },
+    node: {
+      selectable: false,
+      draggable: true,
+      normal: {
+        type: 'circle',
+        radius: (node) => {
+          if (node.type === 'Coordinator') {
+            return 22
+          }
+
+          if (node.type === 'Router') {
+            return 18
+          }
+
+          return 14
+        },
+        color: (node) => nodeFill(node.type),
+        strokeColor: (node) => (node.isolated ? '#f8fafc' : '#ffffff'),
+        strokeWidth: (node) => (node.isolated ? 3 : 2),
+      },
+      hover: {
+        color: (node) => nodeFill(node.type),
+        strokeColor: '#ffffff',
+        strokeWidth: 3,
+      },
+      label: {
+        visible: true,
+        fontSize: 12,
+        color: '#0f172a',
+        direction: 'south',
+        background: {
+          visible: true,
+          color: 'rgba(255,255,255,0.88)',
+          padding: {
+            vertical: 2,
+            horizontal: 6,
+          },
+          borderRadius: 999,
+        },
       },
     },
-  },
-  edge: {
-    selectable: false,
-    normal: {
-      width: edge => {
-        const lqi = edge.linkquality
+    edge: {
+      selectable: false,
+      normal: {
+        width: (edge) => {
+          const lqi = edge.linkquality
 
-        if (typeof lqi !== 'number') {
+          if (typeof lqi !== 'number') {
+            return 2
+          }
+
+          if (lqi >= 180) {
+            return 4
+          }
+
+          if (lqi >= 100) {
+            return 3
+          }
+
           return 2
-        }
-
-        if (lqi >= 180) {
-          return 4
-        }
-
-        if (lqi >= 100) {
-          return 3
-        }
-
-        return 2
+        },
+        color: (edge) => edgeStroke(edge.linkquality),
       },
-      color: edge => edgeStroke(edge.linkquality),
-    },
-    hover: {
-      width: edge => {
-        const lqi = edge.linkquality
-        return typeof lqi === 'number' && lqi >= 100 ? 5 : 4
+      hover: {
+        width: (edge) => {
+          const lqi = edge.linkquality
+          return typeof lqi === 'number' && lqi >= 100 ? 5 : 4
+        },
+        color: (edge) => edgeStroke(edge.linkquality),
       },
-      color: edge => edgeStroke(edge.linkquality),
-    },
-    marker: {
-      target: {
-        type: 'arrow',
-        width: 4,
-        height: 4,
+      marker: {
+        target: {
+          type: 'arrow',
+          width: 4,
+          height: 4,
+        },
       },
+      gap: 16,
     },
-    gap: 16,
-  },
-}))
+  }),
+)
 
 function triggerScan() {
   bridgeStore.requestNetworkMap(props.connectionId)
@@ -446,22 +454,25 @@ watch(
         color: 'warning',
         duration: 0,
         close: false,
-        actions: [{
-          label: t('networkMapPage.scan'),
-          color: 'warning',
-          variant: 'outline',
-          onClick: () => {
-            triggerScan()
+        actions: [
+          {
+            label: t('networkMapPage.scan'),
+            color: 'warning',
+            variant: 'outline',
+            onClick: () => {
+              triggerScan()
+            },
           },
-        }, {
-          label: t('app.clear'),
-          color: 'neutral',
-          variant: 'outline',
-          onClick: () => {
-            clearCachedNetworkMap()
-            toast.remove(id)
+          {
+            label: t('app.clear'),
+            color: 'neutral',
+            variant: 'outline',
+            onClick: () => {
+              clearCachedNetworkMap()
+              toast.remove(id)
+            },
           },
-        }],
+        ],
       })
     }, 350)
   },
@@ -502,8 +513,12 @@ const graphEventHandlers: vNG.EventHandlers = {
       <UDashboardToolbar>
         <template #left>
           <div class="flex items-center gap-3">
-            <UBadge color="neutral" variant="subtle">{{ t('networkMapPage.nodes', { count: nodes.length }) }}</UBadge>
-            <UBadge color="neutral" variant="subtle">{{ t('networkMapPage.links', { count: links.length }) }}</UBadge>
+            <UBadge color="neutral" variant="subtle">{{
+              t('networkMapPage.nodes', { count: nodes.length })
+            }}</UBadge>
+            <UBadge color="neutral" variant="subtle">{{
+              t('networkMapPage.links', { count: links.length })
+            }}</UBadge>
           </div>
         </template>
 
@@ -547,9 +562,15 @@ const graphEventHandlers: vNG.EventHandlers = {
         <div v-if="activeNetworkMap" class="space-y-6">
           <UCard class="border-default bg-default/70" :ui="{ body: 'p-3 sm:p-4' }">
             <div class="mb-4 flex flex-wrap items-center gap-2">
-              <UBadge color="error" variant="soft">{{ t('networkMapPage.coordinators') }}: {{ coordinators.length }}</UBadge>
-              <UBadge color="primary" variant="soft">{{ t('networkMapPage.routers') }}: {{ routers.length }}</UBadge>
-              <UBadge color="neutral" variant="soft">{{ t('networkMapPage.endDevices') }}: {{ endDevices.length }}</UBadge>
+              <UBadge color="error" variant="soft"
+                >{{ t('networkMapPage.coordinators') }}: {{ coordinators.length }}</UBadge
+              >
+              <UBadge color="primary" variant="soft"
+                >{{ t('networkMapPage.routers') }}: {{ routers.length }}</UBadge
+              >
+              <UBadge color="neutral" variant="soft"
+                >{{ t('networkMapPage.endDevices') }}: {{ endDevices.length }}</UBadge
+              >
             </div>
 
             <vNG.VNetworkGraph
@@ -573,7 +594,18 @@ const graphEventHandlers: vNG.EventHandlers = {
                 />
               </template>
 
-              <template #override-node-label="{ nodeId, scale, text, x, y, config, textAnchor, dominantBaseline }">
+              <template
+                #override-node-label="{
+                  nodeId,
+                  scale,
+                  text,
+                  x,
+                  y,
+                  config,
+                  textAnchor,
+                  dominantBaseline,
+                }"
+              >
                 <vNG.VLabelText
                   :text="text"
                   :x="x"
@@ -586,13 +618,17 @@ const graphEventHandlers: vNG.EventHandlers = {
 
                 <text
                   :x="x"
-                  :y="y + (12 * scale)"
+                  :y="y + 12 * scale"
                   :text-anchor="textAnchor"
                   dominant-baseline="hanging"
                   :font-size="10 * scale"
                   fill="#64748b"
                 >
-                  {{ nodeByIeee[nodeId]?.isolated ? t('networkMapPage.isolated') : (nodeByIeee[nodeId]?.type ?? '') }}
+                  {{
+                    nodeByIeee[nodeId]?.isolated
+                      ? t('networkMapPage.isolated')
+                      : (nodeByIeee[nodeId]?.type ?? '')
+                  }}
                 </text>
               </template>
             </vNG.VNetworkGraph>
@@ -616,12 +652,7 @@ const graphEventHandlers: vNG.EventHandlers = {
             <UCard class="border-default bg-default/70" :ui="{ body: 'p-4' }">
               <p class="text-sm text-muted">{{ t('networkMapPage.routers') }}</p>
               <div class="mt-3 flex flex-wrap gap-2">
-                <UBadge
-                  v-for="node in routers"
-                  :key="node.ieeeAddr"
-                  color="primary"
-                  variant="soft"
-                >
+                <UBadge v-for="node in routers" :key="node.ieeeAddr" color="primary" variant="soft">
                   {{ node.friendlyName }}
                 </UBadge>
               </div>
@@ -662,17 +693,15 @@ const graphEventHandlers: vNG.EventHandlers = {
                   <span class="text-sm text-muted">{{ formatLinkLabel(link) }}</span>
                 </div>
 
-                <div
-                  v-if="link.routes?.length"
-                  class="mt-3 flex flex-wrap gap-2"
-                >
+                <div v-if="link.routes?.length" class="mt-3 flex flex-wrap gap-2">
                   <UBadge
                     v-for="(route, routeIndex) in link.routes"
                     :key="`${index}-${routeIndex}`"
                     color="neutral"
                     variant="subtle"
                   >
-                    {{ route.status || 'route' }} · {{ route.destinationAddress ?? '?' }} via {{ route.nextHop ?? '?' }}
+                    {{ route.status || 'route' }} · {{ route.destinationAddress ?? '?' }} via
+                    {{ route.nextHop ?? '?' }}
                   </UBadge>
                 </div>
               </div>

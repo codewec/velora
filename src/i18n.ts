@@ -4,7 +4,7 @@ export const SUPPORTED_LOCALES = ['en', 'ru'] as const
 
 export type AppLocale = (typeof SUPPORTED_LOCALES)[number]
 
-const STORAGE_KEY = 'z2m-ui-locale'
+const STORAGE_KEY = 'velora-locale'
 const DEFAULT_LOCALE: AppLocale = 'en'
 
 function normalizeLocale(value: string | null | undefined): AppLocale {
@@ -114,12 +114,14 @@ export const messages = {
       previousValue: 'Previous',
       readableExposes: '{count} readable exposes',
       noReadableIndicators: 'No readable indicators',
-      noReadableIndicatorsDescription: 'This device does not currently expose any read-only indicators.',
+      noReadableIndicatorsDescription:
+        'This device does not currently expose any read-only indicators.',
       controls: 'Controls',
       writableExposes: '{count} writable exposes',
       unsupportedExposeDescription: 'Expose type is not supported in this MVP.',
       noWritableExposes: 'No writable exposes',
-      noWritableExposesDescription: 'This device does not currently expose binary, numeric or enum controls.',
+      noWritableExposesDescription:
+        'This device does not currently expose binary, numeric or enum controls.',
       endpoint: 'Endpoint: {endpoint}',
       updateDescription: 'Update description',
       renameDevice: 'Rename device',
@@ -135,19 +137,24 @@ export const messages = {
       descriptionCleared: 'Description cleared',
       lastSeen: 'Last seen',
       dangerZone: 'Danger zone',
-      dangerZoneDescription: 'These actions change device state or remove it from the Zigbee2MQTT database.',
+      dangerZoneDescription:
+        'These actions change device state or remove it from the Zigbee2MQTT database.',
       reconfigure: 'Reconfigure',
-      reconfigureDescription: 'Manually trigger a device reconfigure. Use this when the device is not reporting values or is not behaving as expected.',
+      reconfigureDescription:
+        'Manually trigger a device reconfigure. Use this when the device is not reporting values or is not behaving as expected.',
       reconfigureStarted: 'Reconfigure requested',
       interviewDevice: 'Interview device',
-      interviewDescription: 'Trigger a new interview for this device. This re-reads endpoints, clusters and basic attributes.',
+      interviewDescription:
+        'Trigger a new interview for this device. This re-reads endpoints, clusters and basic attributes.',
       interviewStarted: 'Interview requested',
       removeDevice: 'Remove',
       removeDescription: 'Remove this device from the Zigbee network and Zigbee2MQTT database.',
       removeForce: 'Force remove',
-      removeForceDescription: 'Only remove the device from the Zigbee2MQTT database. The device can still communicate until it is factory reset.',
+      removeForceDescription:
+        'Only remove the device from the Zigbee2MQTT database. The device can still communicate until it is factory reset.',
       removeBlock: 'Block device',
-      removeBlockDescription: 'If the device joins again, Zigbee2MQTT will immediately request it to leave the network.',
+      removeBlockDescription:
+        'If the device joins again, Zigbee2MQTT will immediately request it to leave the network.',
       removeRequested: 'Remove requested',
       dangerActionFailed: 'Action failed',
     },
@@ -246,11 +253,14 @@ export const messages = {
     networkMapPage: {
       scan: 'Scan network',
       warningTitle: 'Network scan impacts responsiveness',
-      warningDescription: 'During network map generation the Zigbee network can become less responsive. Run scans manually when needed.',
+      warningDescription:
+        'During network map generation the Zigbee network can become less responsive. Run scans manually when needed.',
       emptyTitle: 'No network map yet',
-      emptyDescription: 'Trigger a scan to request the current raw Zigbee network map from Zigbee2MQTT.',
+      emptyDescription:
+        'Trigger a scan to request the current raw Zigbee network map from Zigbee2MQTT.',
       cachedTitle: 'Showing cached data',
-      cachedDescription: 'The current map was restored from local cache and may be outdated. Cached at {date}.',
+      cachedDescription:
+        'The current map was restored from local cache and may be outdated. Cached at {date}.',
       scanFailed: 'Failed to load network map',
       isolated: 'Isolated',
       nodes: '{count} nodes',
@@ -379,7 +389,8 @@ export const messages = {
       writableExposes: '{count} записываемых exposes',
       unsupportedExposeDescription: 'Этот тип expose пока не поддерживается в MVP.',
       noWritableExposes: 'Нет управляющих exposes',
-      noWritableExposesDescription: 'Устройство сейчас не предоставляет binary, numeric или enum controls.',
+      noWritableExposesDescription:
+        'Устройство сейчас не предоставляет binary, numeric или enum controls.',
       endpoint: 'Endpoint: {endpoint}',
       updateDescription: 'Обновить описание',
       renameDevice: 'Переименовать устройство',
@@ -395,19 +406,24 @@ export const messages = {
       descriptionCleared: 'Описание очищено',
       lastSeen: 'Последнее появление',
       dangerZone: 'Опасная зона',
-      dangerZoneDescription: 'Эти действия изменяют состояние устройства или удаляют его из базы Zigbee2MQTT.',
+      dangerZoneDescription:
+        'Эти действия изменяют состояние устройства или удаляют его из базы Zigbee2MQTT.',
       reconfigure: 'Переконфигурировать',
-      reconfigureDescription: 'Запустить ручную переконфигурацию устройства. Используйте это действие, если устройство не отчитывается или ведёт себя не так, как ожидается.',
+      reconfigureDescription:
+        'Запустить ручную переконфигурацию устройства. Используйте это действие, если устройство не отчитывается или ведёт себя не так, как ожидается.',
       reconfigureStarted: 'Переконфигурация запрошена',
       interviewDevice: 'Интервью устройства',
-      interviewDescription: 'Запустить новое интервью устройства. Будут заново прочитаны endpoints, clusters и базовые атрибуты.',
+      interviewDescription:
+        'Запустить новое интервью устройства. Будут заново прочитаны endpoints, clusters и базовые атрибуты.',
       interviewStarted: 'Интервью запрошено',
       removeDevice: 'Удалить',
       removeDescription: 'Удалить это устройство из Zigbee-сети и базы Zigbee2MQTT.',
       removeForce: 'Принудительное удаление',
-      removeForceDescription: 'Удалить устройство только из базы Zigbee2MQTT. До factory reset оно всё ещё сможет общаться в сети.',
+      removeForceDescription:
+        'Удалить устройство только из базы Zigbee2MQTT. До factory reset оно всё ещё сможет общаться в сети.',
       removeBlock: 'Заблокировать устройство',
-      removeBlockDescription: 'Если устройство снова попытается присоединиться, Zigbee2MQTT сразу попросит его покинуть сеть.',
+      removeBlockDescription:
+        'Если устройство снова попытается присоединиться, Zigbee2MQTT сразу попросит его покинуть сеть.',
       removeRequested: 'Удаление запрошено',
       dangerActionFailed: 'Не удалось выполнить действие',
     },
@@ -506,11 +522,14 @@ export const messages = {
     networkMapPage: {
       scan: 'Сканировать сеть',
       warningTitle: 'Скан сети влияет на отзывчивость',
-      warningDescription: 'Во время построения карты Zigbee-сеть может отвечать хуже. Запускайте сканирование вручную только при необходимости.',
+      warningDescription:
+        'Во время построения карты Zigbee-сеть может отвечать хуже. Запускайте сканирование вручную только при необходимости.',
       emptyTitle: 'Карты сети пока нет',
-      emptyDescription: 'Запустите сканирование, чтобы запросить у Zigbee2MQTT актуальную raw-карту Zigbee-сети.',
+      emptyDescription:
+        'Запустите сканирование, чтобы запросить у Zigbee2MQTT актуальную raw-карту Zigbee-сети.',
       cachedTitle: 'Показаны кэшированные данные',
-      cachedDescription: 'Текущая карта восстановлена из локального кэша и может быть устаревшей. Кэш обновлён: {date}.',
+      cachedDescription:
+        'Текущая карта восстановлена из локального кэша и может быть устаревшей. Кэш обновлён: {date}.',
       scanFailed: 'Не удалось загрузить карту сети',
       isolated: 'Изолирован',
       nodes: '{count} узлов',
