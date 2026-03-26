@@ -169,6 +169,49 @@ export interface BridgeLoggingMessage {
   [key: string]: unknown
 }
 
+export interface NetworkMapNode {
+  ieeeAddr: string
+  friendlyName: string
+  type: string
+  networkAddress?: number
+  lastSeen?: number
+  isolated?: boolean
+}
+
+export interface NetworkMapLinkEndpoint {
+  ieeeAddr: string
+  networkAddress?: number
+}
+
+export interface NetworkMapRoute {
+  destinationAddress?: number
+  nextHop?: number
+  status?: string
+}
+
+export interface NetworkMapLink {
+  source: NetworkMapLinkEndpoint
+  target: NetworkMapLinkEndpoint
+  linkquality?: number
+  routes?: NetworkMapRoute[]
+}
+
+export interface NetworkMapValue {
+  nodes: NetworkMapNode[]
+  links: NetworkMapLink[]
+}
+
+export interface BridgeNetworkMapResponse {
+  status?: 'ok' | 'error' | string
+  error?: string
+  transaction?: string | number
+  data?: {
+    type?: 'raw' | 'graphviz' | 'plantuml' | string
+    routes?: boolean
+    value?: NetworkMapValue | string
+  }
+}
+
 export interface BridgeEventBase {
   type: string
   data?: Record<string, unknown>

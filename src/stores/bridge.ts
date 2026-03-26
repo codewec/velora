@@ -7,9 +7,11 @@ import type {
   BridgeEvent,
   BridgeHealth,
   BridgeInfo,
+  BridgeNetworkMapResponse,
   BridgePermitJoinResponse,
   DeviceStateValue,
   InterviewSession,
+  NetworkMapValue,
 } from '@/types/z2m'
 
 function upsertSession(
@@ -52,6 +54,9 @@ export const useBridgeStore = defineStore('bridge', () => {
   const permitJoinTargetByConnection = ref<Record<string, string>>({})
   const activeSessionsByConnection = ref<Record<string, InterviewSession[]>>({})
   const completedSessionsByConnection = ref<Record<string, InterviewSession[]>>({})
+  const networkMapByConnection = ref<Record<string, NetworkMapValue | null>>({})
+  const networkMapLoadingByConnection = ref<Record<string, boolean>>({})
+  const networkMapErrorByConnection = ref<Record<string, string | null>>({})
 
   const totalActiveSessions = computed(() =>
     Object.values(activeSessionsByConnection.value).reduce((count, sessions) => count + sessions.length, 0),
@@ -83,6 +88,18 @@ export const useBridgeStore = defineStore('bridge', () => {
 
   function completedSessions(connectionId: string) {
     return completedSessionsByConnection.value[connectionId] ?? []
+  }
+
+  function networkMap(connectionId: string) {
+    return networkMapByConnection.value[connectionId] ?? null
+  }
+
+  function networkMapLoading(connectionId: string) {
+    return networkMapLoadingByConnection.value[connectionId] ?? false
+  }
+
+  function networkMapError(connectionId: string) {
+    return networkMapErrorByConnection.value[connectionId] ?? null
   }
 
   function lastCompletedSessions(connectionId: string) {
@@ -155,6 +172,55 @@ export const useBridgeStore = defineStore('bridge', () => {
     permitJoinTargetByConnection.value = {
       ...permitJoinTargetByConnection.value,
       [connectionId]: 'all',
+    }
+  }
+
+  function requestNetworkMap(connectionId: string) {
+    networkMapLoadingByConnection.value = {
+      ...networkMapLoadingByConnection.value,
+      [connectionId]: true,
+    }
+    networkMapErrorByConnection.value = {
+      ...networkMapErrorByConnection.value,
+      [connectionId]: null,
+    }
+
+    return useZ2M(connectionId).send('bridge/request/networkmap', {
+      type: 'raw',
+      routes: true,
+      transaction: createTransactionId(),
+    })
+  }
+
+  function setNetworkMapResponse(connectionId: string, response: BridgeNetworkMapResponse) {
+    networkMapLoadingByConnection.value = {
+      ...networkMapLoadingByConnection.value,
+      [connectionId]: false,
+    }
+
+    if (response.status !== 'ok') {
+      networkMapErrorByConnection.value = {
+        ...networkMapErrorByConnection.value,
+        [connectionId]: response.error || 'Failed to load network map',
+      }
+      return
+    }
+
+    if (response.data?.type !== 'raw' || typeof response.data.value !== 'object' || response.data.value === null) {
+      networkMapErrorByConnection.value = {
+        ...networkMapErrorByConnection.value,
+        [connectionId]: 'Unsupported network map response',
+      }
+      return
+    }
+
+    networkMapByConnection.value = {
+      ...networkMapByConnection.value,
+      [connectionId]: response.data.value as NetworkMapValue,
+    }
+    networkMapErrorByConnection.value = {
+      ...networkMapErrorByConnection.value,
+      [connectionId]: null,
     }
   }
 
@@ -269,6 +335,9 @@ export const useBridgeStore = defineStore('bridge', () => {
     permitJoinTargetByConnection,
     activeSessionsByConnection,
     completedSessionsByConnection,
+    networkMapByConnection,
+    networkMapLoadingByConnection,
+    networkMapErrorByConnection,
     totalActiveSessions,
     infoFor,
     healthFor,
@@ -278,9 +347,14 @@ export const useBridgeStore = defineStore('bridge', () => {
     activeSessions,
     completedSessions,
     lastCompletedSessions,
+    networkMap,
+    networkMapLoading,
+    networkMapError,
     setBridgeInfo,
     setBridgeHealth,
     syncPermitJoinResponse,
+    requestNetworkMap,
+    setNetworkMapResponse,
     handleEvent,
     setPermitJoinTarget,
     setPermitJoin,

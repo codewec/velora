@@ -13,6 +13,7 @@ import type {
   BridgeHealth,
   BridgeInfo,
   BridgeLoggingMessage,
+  BridgeNetworkMapResponse,
   BridgePermitJoinResponse,
   Device,
   DeviceState,
@@ -42,6 +43,10 @@ function isBridgePermitJoinResponse(value: unknown): value is BridgePermitJoinRe
 
 function isBridgeLoggingMessage(value: unknown): value is BridgeLoggingMessage {
   return isRecord(value) && typeof value.message === 'string' && typeof value.level === 'string'
+}
+
+function isBridgeNetworkMapResponse(value: unknown): value is BridgeNetworkMapResponse {
+  return isRecord(value)
 }
 
 export function useZ2MInit() {
@@ -107,6 +112,19 @@ export function useZ2MInit() {
         raw: JSON.stringify(message.payload, null, 2),
       })
       bridgeStore.syncPermitJoinResponse(connectionId, message.payload)
+      return
+    }
+
+    if (message.topic === 'bridge/response/networkmap' && isBridgeNetworkMapResponse(message.payload)) {
+      logsStore.addLog(connectionId, {
+        level: message.payload.status === 'ok' ? 'info' : 'error',
+        kind: 'bridge',
+        summary: message.payload.status === 'ok'
+          ? i18n.global.t('logsPage.networkMapUpdated')
+          : i18n.global.t('logsPage.networkMapFailed'),
+        raw: JSON.stringify(message.payload, null, 2),
+      })
+      bridgeStore.setNetworkMapResponse(connectionId, message.payload)
       return
     }
 

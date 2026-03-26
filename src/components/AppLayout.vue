@@ -21,7 +21,15 @@ const links = computed<NavigationMenuItem[][]>(() => [[{
   label: t('app.devices'),
   icon: 'i-lucide-layout-grid',
   to: `/connections/${connectionId.value}`,
-  exact: !isDeviceRoute.value && route.name !== 'logs' && route.name !== 'information',
+  exact: !isDeviceRoute.value && route.name !== 'logs' && route.name !== 'information' && route.name !== 'network-map',
+  onSelect: () => {
+    open.value = false
+  },
+}, {
+  label: t('app.networkMap'),
+  icon: 'i-lucide-git-branch-plus',
+  to: `/connections/${connectionId.value}/network-map`,
+  exact: route.name === 'network-map',
   onSelect: () => {
     open.value = false
   },

@@ -3,6 +3,7 @@ import { getDefaultConnectionId } from '@/config/z2mConnections'
 import DevicesView from '@/views/DevicesView.vue'
 import DeviceExposesView from '@/views/DeviceExposesView.vue'
 import DeviceInfoView from '@/views/DeviceInfoView.vue'
+import NetworkMapView from '@/views/NetworkMapView.vue'
 import DeviceStateView from '@/views/DeviceStateView.vue'
 import InformationView from '@/views/InformationView.vue'
 import LogsView from '@/views/LogsView.vue'
@@ -52,6 +53,12 @@ const router = createRouter({
       path: '/connections/:connectionId/information',
       name: 'information',
       component: InformationView,
+      props: true,
+    },
+    {
+      path: '/connections/:connectionId/network-map',
+      name: 'network-map',
+      component: NetworkMapView,
       props: true,
     },
   ],
