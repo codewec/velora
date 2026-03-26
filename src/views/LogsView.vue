@@ -4,7 +4,9 @@ import { useI18n } from 'vue-i18n'
 
 import ConnectionNavbarActions from '@/components/ConnectionNavbarActions.vue'
 import { useZ2M } from '@/composables/useZ2M'
+import { useLogDetailsStore } from '@/stores/logDetails'
 import { useLogsStore, type LogLevel } from '@/stores/logs'
+import { compactDetails, rawLine } from '@/utils/logPresentation'
 
 const props = defineProps<{
   connectionId: string
@@ -16,28 +18,9 @@ const logs = computed(() => logsStore.logsFor(props.connectionId))
 const rawMode = ref(false)
 const selectedLevel = ref<'all' | LogLevel>('all')
 const followLogs = ref(true)
-const isDetailsOpen = ref(false)
 const logContainer = ref<HTMLElement | null>(null)
 const { t } = useI18n()
-const toast = useToast()
-
-interface ParsedTopicPayload {
-  topic: string
-  payload: string
-}
-
-interface SelectedLogSnapshot {
-  id: string
-  summary: string
-  lineNumber: number
-  line: string
-  level: string
-  kind: string
-  time: number
-  raw: string
-}
-
-const selectedLogEntry = ref<SelectedLogSnapshot | null>(null)
+const logDetailsStore = useLogDetailsStore()
 
 const levelOptions = computed(() => [
   { label: t('logsPage.levelAll'), value: 'all' as const },
@@ -61,91 +44,6 @@ function rawClass(level: string) {
   return 'text-slate-700 dark:text-slate-300'
 }
 
-function compactJson(value: unknown) {
-  return JSON.stringify(value)
-}
-
-function prettyJson(raw: string) {
-  try {
-    return JSON.stringify(JSON.parse(raw), null, 2)
-  } catch {
-    return raw
-  }
-}
-
-function parseTopicPayload(raw: string): ParsedTopicPayload | null {
-  try {
-    const parsed = JSON.parse(raw) as { topic?: unknown; payload?: unknown }
-
-    if (typeof parsed.topic !== 'string') {
-      return null
-    }
-
-    return {
-      topic: parsed.topic,
-      payload: typeof parsed.payload === 'string' ? parsed.payload : compactJson(parsed.payload),
-    }
-  } catch {
-    return null
-  }
-}
-
-function rawNamespace(kind: string) {
-  switch (kind) {
-    case 'tx':
-    case 'rx':
-      return 'mqtt'
-    case 'transport':
-      return 'frontend'
-    case 'bridge':
-      return 'bridge'
-    case 'event':
-      return 'event'
-    case 'device':
-      return 'device'
-    default:
-      return 'app'
-  }
-}
-
-function rawAction(entry: (typeof logs.value)[number]) {
-  const topicPayload = parseTopicPayload(entry.raw)
-
-  if (entry.kind === 'tx' && topicPayload) {
-    return `MQTT publish: topic '${topicPayload.topic}', payload '${topicPayload.payload}'`
-  }
-
-  if ((entry.kind === 'rx' || entry.kind === 'device') && topicPayload) {
-    return `MQTT receive: topic '${topicPayload.topic}', payload '${topicPayload.payload}'`
-  }
-
-  if (entry.kind === 'bridge' && topicPayload) {
-    return `Bridge message: topic '${topicPayload.topic}', payload '${topicPayload.payload}'`
-  }
-
-  const compactRaw = entry.raw.replaceAll('\n', ' ').replace(/\s+/g, ' ').trim()
-  return compactRaw ? `${entry.summary}: ${compactRaw}` : entry.summary
-}
-
-function compactDetails(entry: (typeof logs.value)[number]) {
-  const topicPayload = parseTopicPayload(entry.raw)
-
-  if (topicPayload) {
-    return `topic '${topicPayload.topic}' · payload '${topicPayload.payload}'`
-  }
-
-  const compactRaw = entry.raw.replaceAll('\n', ' ').replace(/\s+/g, ' ').trim()
-  return compactRaw || entry.summary
-}
-
-async function copyText(value: string, title: string) {
-  await navigator.clipboard.writeText(value)
-  toast.add({
-    title,
-    color: 'success',
-  })
-}
-
 const filteredLogs = computed(() =>
   selectedLevel.value === 'all'
     ? logs.value
@@ -156,7 +54,7 @@ const rawEntries = computed(() =>
   [...filteredLogs.value].reverse().map((entry, index) => ({
     ...entry,
     lineNumber: index + 1,
-    line: `[${new Date(entry.time).toLocaleString()}] z2m:${rawNamespace(entry.kind)}: ${rawAction(entry)}`,
+    line: rawLine(entry, index + 1).replace(/^\d+\s/, ''),
   })),
 )
 
@@ -167,17 +65,7 @@ function openLogDetails(id: string) {
     return
   }
 
-  selectedLogEntry.value = {
-    id: entry.id,
-    summary: entry.summary,
-    lineNumber: entry.lineNumber,
-    line: entry.line,
-    level: entry.level,
-    kind: entry.kind,
-    time: entry.time,
-    raw: entry.raw,
-  }
-  isDetailsOpen.value = true
+  logDetailsStore.open(entry)
 }
 
 async function scrollToBottom() {
@@ -217,18 +105,6 @@ async function enableFollow() {
   await nextTick()
   await scrollToBottom()
 }
-
-watch(isDetailsOpen, (open) => {
-  if (!open) {
-    // Keep the selected entry alive until the close animation finishes,
-    // otherwise the modal collapses to its header before it fades out.
-    window.setTimeout(() => {
-      if (!isDetailsOpen.value) {
-        selectedLogEntry.value = null
-      }
-    }, 220)
-  }
-})
 
 watch(
   () => [rawMode.value, rawEntries.value.length] as const,
@@ -367,98 +243,6 @@ function clearLogs() {
         </div>
       </UCard>
 
-      <UModal
-        v-model:open="isDetailsOpen"
-        :title="selectedLogEntry?.summary || t('logsPage.title')"
-        :description="
-          selectedLogEntry
-            ? `[${new Date(selectedLogEntry.time).toLocaleString()}] ${selectedLogEntry.kind} ${selectedLogEntry.level}`
-            : undefined
-        "
-        :ui="{ content: 'sm:max-w-4xl' }"
-      >
-        <template #body>
-          <div v-if="selectedLogEntry" class="space-y-4">
-            <div class="grid gap-3 sm:grid-cols-2">
-              <div class="rounded-2xl bg-slate-100/80 p-3 dark:bg-slate-900/60">
-                <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                  {{ t('logsPage.line') }}
-                </p>
-                <p class="mt-1 font-mono text-sm text-slate-900 dark:text-slate-100">
-                  {{ selectedLogEntry.lineNumber }}
-                </p>
-              </div>
-
-              <div class="rounded-2xl bg-slate-100/80 p-3 dark:bg-slate-900/60">
-                <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                  {{ t('logsPage.timestamp') }}
-                </p>
-                <p class="mt-1 font-mono text-sm text-slate-900 dark:text-slate-100">
-                  {{ new Date(selectedLogEntry.time).toLocaleString() }}
-                </p>
-              </div>
-
-              <div class="rounded-2xl bg-slate-100/80 p-3 dark:bg-slate-900/60">
-                <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                  {{ t('logsPage.level') }}
-                </p>
-                <p class="mt-1 font-mono text-sm text-slate-900 dark:text-slate-100">
-                  {{ selectedLogEntry.level }}
-                </p>
-              </div>
-
-              <div class="rounded-2xl bg-slate-100/80 p-3 dark:bg-slate-900/60">
-                <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                  {{ t('logsPage.kind') }}
-                </p>
-                <p class="mt-1 font-mono text-sm text-slate-900 dark:text-slate-100">
-                  {{ selectedLogEntry.kind }}
-                </p>
-              </div>
-            </div>
-
-            <div class="rounded-2xl bg-slate-100/80 p-3 dark:bg-slate-900/60">
-              <div class="flex items-start justify-between gap-3">
-                <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                  {{ t('logsPage.message') }}
-                </p>
-                <UButton
-                  icon="i-lucide-copy"
-                  color="neutral"
-                  variant="ghost"
-                  size="xs"
-                  @click="copyText(selectedLogEntry.line, t('logsPage.messageCopied'))"
-                />
-              </div>
-              <textarea
-                readonly
-                :value="selectedLogEntry.line"
-                class="mt-2 min-h-24 w-full resize-y rounded-xl border border-slate-200 bg-white/90 p-3 font-mono text-xs leading-5 text-slate-800 outline-none dark:border-white/10 dark:bg-slate-950/80 dark:text-slate-200"
-              />
-            </div>
-
-            <div class="rounded-2xl bg-slate-100/80 p-3 dark:bg-slate-900/60">
-              <div class="flex items-start justify-between gap-3">
-                <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                  {{ t('logsPage.payload') }}
-                </p>
-                <UButton
-                  icon="i-lucide-copy"
-                  color="neutral"
-                  variant="ghost"
-                  size="xs"
-                  @click="copyText(prettyJson(selectedLogEntry.raw), t('logsPage.payloadCopied'))"
-                />
-              </div>
-              <textarea
-                readonly
-                :value="prettyJson(selectedLogEntry.raw)"
-                class="mt-2 min-h-48 w-full resize-y rounded-xl border border-slate-200 bg-white/90 p-3 font-mono text-xs leading-5 text-slate-800 outline-none dark:border-white/10 dark:bg-slate-950/80 dark:text-slate-200"
-              />
-            </div>
-          </div>
-        </template>
-      </UModal>
     </template>
   </UDashboardPanel>
 </template>

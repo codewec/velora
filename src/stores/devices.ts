@@ -67,6 +67,15 @@ export const useDevicesStore = defineStore('devices', () => {
     return reportedLastSeenFor(connectionId)[friendlyName] ?? null
   }
 
+  function deviceCommandTopic(connectionId: string, friendlyName: string) {
+    const device = devicesFor(connectionId).find(item => item.friendly_name === friendlyName)
+
+    // Zigbee2MQTT logs outgoing writes against the stable device topic.
+    // Using IEEE address keeps our command topics aligned with z2m and avoids
+    // changing the outbound topic every time a friendly name is renamed.
+    return device?.ieee_address || friendlyName
+  }
+
   function setObservedLastSeen(connectionId: string, friendlyName: string, timestamp: number) {
     const current = observedLastSeenFor(connectionId)
     observedLastSeenByConnection.value = {
@@ -302,6 +311,7 @@ export const useDevicesStore = defineStore('devices', () => {
     deviceActivity,
     deviceLastSeen,
     deviceReportedLastSeen,
+    deviceCommandTopic,
     peripheralDevices,
     permitJoinDevices,
     setDevices,

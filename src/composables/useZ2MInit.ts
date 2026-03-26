@@ -7,10 +7,12 @@ import { useDevicesStore } from '@/stores/devices'
 import { useIndicatorHistoryStore } from '@/stores/indicatorHistory'
 import { useLogsStore } from '@/stores/logs'
 import { i18n } from '@/i18n'
+import { parseBridgeLoggingPayload } from '@/utils/logPresentation'
 import type {
   BridgeEvent,
   BridgeHealth,
   BridgeInfo,
+  BridgeLoggingMessage,
   BridgePermitJoinResponse,
   Device,
   DeviceState,
@@ -36,6 +38,10 @@ function isBridgeEvent(value: unknown): value is BridgeEvent {
 
 function isBridgePermitJoinResponse(value: unknown): value is BridgePermitJoinResponse {
   return isRecord(value)
+}
+
+function isBridgeLoggingMessage(value: unknown): value is BridgeLoggingMessage {
+  return isRecord(value) && typeof value.message === 'string' && typeof value.level === 'string'
 }
 
 export function useZ2MInit() {
@@ -101,6 +107,27 @@ export function useZ2MInit() {
         raw: JSON.stringify(message.payload, null, 2),
       })
       bridgeStore.syncPermitJoinResponse(connectionId, message.payload)
+      return
+    }
+
+    if (message.topic === 'bridge/logging' && isBridgeLoggingMessage(message.payload)) {
+      const raw = JSON.stringify(message.payload, null, 2)
+      const parsed = parseBridgeLoggingPayload(raw)
+
+      logsStore.addLog(connectionId, {
+        level: message.payload.level === 'error'
+          ? 'error'
+          : message.payload.level === 'warning'
+            ? 'warning'
+            : message.payload.level === 'debug'
+              ? 'debug'
+              : 'info',
+        kind: 'bridge',
+        summary: parsed?.deviceName
+          ? i18n.global.t('logsPage.deviceErrorSummary', { device: parsed.deviceName })
+          : i18n.global.t('logsPage.errorToastTitle'),
+        raw,
+      })
       return
     }
 

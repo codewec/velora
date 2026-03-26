@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 
 import FeatureHeader from '@/components/DeviceControls/FeatureHeader.vue'
 import { useZ2M } from '@/composables/useZ2M'
@@ -15,13 +15,29 @@ const props = defineProps<{
 }>()
 
 const items = computed(() => props.expose.values.map((value) => ({ label: value, value })))
+const CONTROL_PENDING_TIMEOUT_MS = 5000
 const model = ref<string | undefined>(undefined)
+const pending = ref(false)
 const devicesStore = useDevicesStore()
+let pendingTimer: ReturnType<typeof setTimeout> | null = null
+
+function clearPendingTimer() {
+  if (pendingTimer) {
+    clearTimeout(pendingTimer)
+    pendingTimer = null
+  }
+}
+
+function actualValue() {
+  return typeof props.stateValue === 'string' ? props.stateValue : undefined
+}
 
 watch(
   () => props.stateValue,
-  (value) => {
-    model.value = typeof value === 'string' ? value : undefined
+  () => {
+    model.value = actualValue()
+    pending.value = false
+    clearPendingTimer()
   },
   { immediate: true },
 )
@@ -32,15 +48,32 @@ function handleUpdate(value: string | number | boolean | Record<string, unknown>
   }
 
   model.value = value
+  pending.value = true
+  const topic = `${devicesStore.deviceCommandTopic(props.connectionId, props.deviceName)}/set`
 
-  const sent = useZ2M(props.connectionId).send(`${props.deviceName}/set`, {
+  const sent = useZ2M(props.connectionId).send(topic, {
     [featureKey(props.expose) || 'value']: value,
   })
 
-  if (sent) {
-    devicesStore.markDeviceTx(props.connectionId, props.deviceName)
+  if (!sent) {
+    model.value = actualValue()
+    pending.value = false
+    clearPendingTimer()
+    return
   }
+
+  devicesStore.markDeviceTx(props.connectionId, props.deviceName)
+  clearPendingTimer()
+  pendingTimer = setTimeout(() => {
+    model.value = actualValue()
+    pending.value = false
+    pendingTimer = null
+  }, CONTROL_PENDING_TIMEOUT_MS)
 }
+
+onUnmounted(() => {
+  clearPendingTimer()
+})
 </script>
 
 <template>
@@ -52,6 +85,7 @@ function handleUpdate(value: string | number | boolean | Record<string, unknown>
         <USelect
           :items="items"
           :model-value="model"
+          :loading="pending"
           placeholder="Select value"
           @update:model-value="handleUpdate"
         />

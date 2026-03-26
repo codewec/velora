@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 
 import FeatureHeader from '@/components/DeviceControls/FeatureHeader.vue'
 import { useZ2M } from '@/composables/useZ2M'
@@ -15,17 +15,36 @@ const props = defineProps<{
 }>()
 
 const devicesStore = useDevicesStore()
+const CONTROL_PENDING_TIMEOUT_MS = 5000
 const sortedExposes = computed(() =>
   [...props.exposes].sort((left, right) => featureKey(left).localeCompare(featureKey(right))),
 )
 const primaryExpose = computed(() => sortedExposes.value[0] ?? props.exposes[0])
+const optimisticByKey = ref<Record<string, string | undefined>>({})
+const pendingByKey = ref<Record<string, boolean>>({})
+const pendingTimers = new Map<string, ReturnType<typeof setTimeout>>()
+
+function clearPendingTimer(key: string) {
+  const timer = pendingTimers.get(key)
+
+  if (timer) {
+    clearTimeout(timer)
+    pendingTimers.delete(key)
+  }
+}
 
 function items(expose: EnumExpose) {
   return expose.values.map((value) => ({ label: value, value }))
 }
 
 function modelValue(expose: EnumExpose) {
-  const value = props.state[featureKey(expose)]
+  const key = featureKey(expose)
+
+  if (pendingByKey.value[key]) {
+    return optimisticByKey.value[key]
+  }
+
+  const value = props.state[key]
   return typeof value === 'string' ? value : undefined
 }
 
@@ -33,15 +52,65 @@ function handleUpdate(expose: EnumExpose, value: string | number | boolean | Rec
   if (typeof value !== 'string') {
     return
   }
+  const key = featureKey(expose)
+  optimisticByKey.value = { ...optimisticByKey.value, [key]: value }
+  pendingByKey.value = { ...pendingByKey.value, [key]: true }
+  const topic = `${devicesStore.deviceCommandTopic(props.connectionId, props.deviceName)}/set`
 
-  const sent = useZ2M(props.connectionId).send(`${props.deviceName}/set`, {
-    [featureKey(expose)]: value,
+  const sent = useZ2M(props.connectionId).send(topic, {
+    [key]: value,
   })
 
-  if (sent) {
-    devicesStore.markDeviceTx(props.connectionId, props.deviceName)
+  if (!sent) {
+    clearPendingTimer(key)
+    const actual = props.state[key]
+    pendingByKey.value = { ...pendingByKey.value, [key]: false }
+    optimisticByKey.value = {
+      ...optimisticByKey.value,
+      [key]: typeof actual === 'string' ? actual : undefined,
+    }
+    return
   }
+
+  devicesStore.markDeviceTx(props.connectionId, props.deviceName)
+  clearPendingTimer(key)
+  pendingTimers.set(key, setTimeout(() => {
+    const actual = props.state[key]
+    pendingByKey.value = { ...pendingByKey.value, [key]: false }
+    optimisticByKey.value = {
+      ...optimisticByKey.value,
+      [key]: typeof actual === 'string' ? actual : undefined,
+    }
+    pendingTimers.delete(key)
+  }, CONTROL_PENDING_TIMEOUT_MS))
 }
+
+watch(
+  () => sortedExposes.value.map(expose => props.state[featureKey(expose)]),
+  () => {
+    for (const expose of sortedExposes.value) {
+      const key = featureKey(expose)
+
+      if (!pendingByKey.value[key]) {
+        continue
+      }
+
+      clearPendingTimer(key)
+      const actual = props.state[key]
+      pendingByKey.value = { ...pendingByKey.value, [key]: false }
+      optimisticByKey.value = {
+        ...optimisticByKey.value,
+        [key]: typeof actual === 'string' ? actual : undefined,
+      }
+    }
+  },
+)
+
+onUnmounted(() => {
+  for (const key of pendingTimers.keys()) {
+    clearPendingTimer(key)
+  }
+})
 </script>
 
 <template>
@@ -63,6 +132,7 @@ function handleUpdate(expose: EnumExpose, value: string | number | boolean | Rec
             <USelect
               :items="items(expose)"
               :model-value="modelValue(expose)"
+              :loading="pendingByKey[featureKey(expose)]"
               placeholder="Select value"
               @update:model-value="(value: string | number | boolean | Record<string, unknown> | undefined) => handleUpdate(expose, value)"
             />

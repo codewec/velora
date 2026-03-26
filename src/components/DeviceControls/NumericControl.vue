@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { onUnmounted, ref, watch } from 'vue'
 
 import FeatureHeader from '@/components/DeviceControls/FeatureHeader.vue'
 import { useZ2M } from '@/composables/useZ2M'
@@ -14,26 +14,48 @@ const props = defineProps<{
   stateValue: DeviceStateValue | undefined
 }>()
 
-const model = ref<number[]>([
+const CONTROL_PENDING_TIMEOUT_MS = 5000
+const model = ref<number>(
   typeof props.stateValue === 'number' ? props.stateValue : (props.expose.value_min ?? 0),
-])
+)
+const pending = ref(false)
 const devicesStore = useDevicesStore()
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
+let pendingTimer: ReturnType<typeof setTimeout> | null = null
+let syncingFromState = false
+
+function clearPendingTimer() {
+  if (pendingTimer) {
+    clearTimeout(pendingTimer)
+    pendingTimer = null
+  }
+}
+
+function actualValue() {
+  return typeof props.stateValue === 'number' ? props.stateValue : (props.expose.value_min ?? 0)
+}
 
 watch(
   () => props.stateValue,
   (value) => {
     if (typeof value === 'number') {
-      model.value = [value]
+      syncingFromState = true
+      model.value = value
+      pending.value = false
+      clearPendingTimer()
     }
   },
+  { immediate: true },
 )
 
 watch(model, (value) => {
-  const nextValue = value[0]
+  if (syncingFromState) {
+    syncingFromState = false
+    return
+  }
 
-  if (typeof nextValue !== 'number') {
+  if (typeof value !== 'number') {
     return
   }
 
@@ -45,14 +67,36 @@ watch(model, (value) => {
   // write so we keep the UI responsive without flooding Zigbee2MQTT with
   // intermediate set commands for values the user never intended to keep.
   debounceTimer = setTimeout(() => {
-    const sent = useZ2M(props.connectionId).send(`${props.deviceName}/set`, {
-      [featureKey(props.expose) || 'value']: nextValue,
+    const topic = `${devicesStore.deviceCommandTopic(props.connectionId, props.deviceName)}/set`
+    pending.value = true
+
+    const sent = useZ2M(props.connectionId).send(topic, {
+      [featureKey(props.expose) || 'value']: value,
     })
 
-    if (sent) {
-      devicesStore.markDeviceTx(props.connectionId, props.deviceName)
+    if (!sent) {
+      syncingFromState = true
+      model.value = actualValue()
+      pending.value = false
+      return
     }
+
+    devicesStore.markDeviceTx(props.connectionId, props.deviceName)
+    clearPendingTimer()
+    pendingTimer = setTimeout(() => {
+      syncingFromState = true
+      model.value = actualValue()
+      pending.value = false
+      pendingTimer = null
+    }, CONTROL_PENDING_TIMEOUT_MS)
   }, 150)
+})
+
+onUnmounted(() => {
+  if (debounceTimer) {
+    clearTimeout(debounceTimer)
+  }
+  clearPendingTimer()
 })
 </script>
 
@@ -62,13 +106,21 @@ watch(model, (value) => {
       <div class="flex items-center justify-between gap-3">
         <FeatureHeader :expose="expose" />
 
-        <span class="min-w-24 text-right text-2xl font-semibold text-slate-800 dark:text-slate-100">
-          {{ model[0] }}{{ expose.unit || '' }}
-        </span>
+        <div class="flex min-w-24 items-center justify-end gap-2">
+          <UIcon
+            v-if="pending"
+            name="i-lucide-loader-circle"
+            class="animate-spin text-slate-400"
+          />
+          <span class="text-right text-2xl font-semibold text-slate-800 dark:text-slate-100">
+            {{ model }}{{ expose.unit || '' }}
+          </span>
+        </div>
       </div>
 
       <USlider
         v-model="model"
+        :disabled="pending"
         :min="expose.value_min ?? 0"
         :max="expose.value_max ?? 100"
         :step="expose.value_step ?? 1"

@@ -111,8 +111,9 @@ async function saveSchedule() {
   ) as DeviceState
 
   isSaving.value = true
+  const topic = `${devicesStore.deviceCommandTopic(props.connectionId, props.deviceName)}/set`
 
-  const sent = useZ2M(props.connectionId).send(`${props.deviceName}/set`, payload)
+  const sent = useZ2M(props.connectionId).send(topic, payload)
 
   if (!sent) {
     toast.add({

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { onUnmounted, ref, watch } from 'vue'
 
 import FeatureHeader from '@/components/DeviceControls/FeatureHeader.vue'
 import { useZ2M } from '@/composables/useZ2M'
@@ -14,32 +14,69 @@ const props = defineProps<{
   stateValue: DeviceStateValue | undefined
 }>()
 
+const CONTROL_PENDING_TIMEOUT_MS = 5000
 const checked = ref(false)
+const pending = ref(false)
 const devicesStore = useDevicesStore()
+let pendingTimer: ReturnType<typeof setTimeout> | null = null
+
+function clearPendingTimer() {
+  if (pendingTimer) {
+    clearTimeout(pendingTimer)
+    pendingTimer = null
+  }
+}
+
+function actualChecked() {
+  return props.stateValue === (props.expose.value_on ?? 'ON')
+}
 
 watch(
   () => props.stateValue,
-  (value) => {
-    checked.value = value === (props.expose.value_on ?? 'ON')
+  () => {
+    checked.value = actualChecked()
+    pending.value = false
+    clearPendingTimer()
   },
   { immediate: true },
 )
 
 function handleToggle(value: boolean | undefined) {
   checked.value = Boolean(value)
+  pending.value = true
+  const topic = `${devicesStore.deviceCommandTopic(props.connectionId, props.deviceName)}/set`
 
   const payload = value
     ? (props.expose.value_on ?? 'ON')
     : (props.expose.value_off ?? 'OFF')
 
-  const sent = useZ2M(props.connectionId).send(`${props.deviceName}/set`, {
+  const sent = useZ2M(props.connectionId).send(topic, {
     [featureKey(props.expose) || 'state']: payload,
   })
 
-  if (sent) {
-    devicesStore.markDeviceTx(props.connectionId, props.deviceName)
+  if (!sent) {
+    checked.value = actualChecked()
+    pending.value = false
+    clearPendingTimer()
+    return
   }
+
+  devicesStore.markDeviceTx(props.connectionId, props.deviceName)
+  clearPendingTimer()
+
+  // Optimistic controls need a bounded lifetime. If the device never confirms
+  // the write, we roll back to the last known state so the UI does not stay
+  // stuck in a fake position indefinitely.
+  pendingTimer = setTimeout(() => {
+    checked.value = actualChecked()
+    pending.value = false
+    pendingTimer = null
+  }, CONTROL_PENDING_TIMEOUT_MS)
 }
+
+onUnmounted(() => {
+  clearPendingTimer()
+})
 </script>
 
 <template>
@@ -48,7 +85,7 @@ function handleToggle(value: boolean | undefined) {
       <FeatureHeader :expose="expose" />
 
       <div class="flex min-w-24 items-center justify-end">
-        <USwitch :model-value="checked" @update:model-value="handleToggle" />
+        <USwitch :model-value="checked" :loading="pending" @update:model-value="handleToggle" />
       </div>
     </div>
   </UCard>

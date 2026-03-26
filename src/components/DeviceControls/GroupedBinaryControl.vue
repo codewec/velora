@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 
 import FeatureHeader from '@/components/DeviceControls/FeatureHeader.vue'
 import { useZ2M } from '@/composables/useZ2M'
@@ -15,28 +15,84 @@ const props = defineProps<{
 }>()
 
 const devicesStore = useDevicesStore()
+const CONTROL_PENDING_TIMEOUT_MS = 5000
 const sortedExposes = computed(() =>
   [...props.exposes].sort((left, right) => featureKey(left).localeCompare(featureKey(right))),
 )
 const primaryExpose = computed(() => sortedExposes.value[0] ?? props.exposes[0])
+const optimisticByKey = ref<Record<string, boolean>>({})
+const pendingByKey = ref<Record<string, boolean>>({})
+const pendingTimers = new Map<string, ReturnType<typeof setTimeout>>()
 
-function isChecked(expose: BinaryExpose) {
+function clearPendingTimer(key: string) {
+  const timer = pendingTimers.get(key)
+
+  if (timer) {
+    clearTimeout(timer)
+    pendingTimers.delete(key)
+  }
+}
+
+function actualChecked(expose: BinaryExpose) {
   return props.state[featureKey(expose)] === (expose.value_on ?? 'ON')
 }
 
+function isChecked(expose: BinaryExpose) {
+  const key = featureKey(expose)
+  return pendingByKey.value[key] ? Boolean(optimisticByKey.value[key]) : actualChecked(expose)
+}
+
 function handleToggle(expose: BinaryExpose, value: boolean | undefined) {
+  const key = featureKey(expose)
+  optimisticByKey.value = { ...optimisticByKey.value, [key]: Boolean(value) }
+  pendingByKey.value = { ...pendingByKey.value, [key]: true }
   const payload = value
     ? (expose.value_on ?? 'ON')
     : (expose.value_off ?? 'OFF')
+  const topic = `${devicesStore.deviceCommandTopic(props.connectionId, props.deviceName)}/set`
 
-  const sent = useZ2M(props.connectionId).send(`${props.deviceName}/set`, {
-    [featureKey(expose)]: payload,
+  const sent = useZ2M(props.connectionId).send(topic, {
+    [key]: payload,
   })
 
-  if (sent) {
-    devicesStore.markDeviceTx(props.connectionId, props.deviceName)
+  if (!sent) {
+    clearPendingTimer(key)
+    pendingByKey.value = { ...pendingByKey.value, [key]: false }
+    optimisticByKey.value = { ...optimisticByKey.value, [key]: actualChecked(expose) }
+    return
   }
+
+  devicesStore.markDeviceTx(props.connectionId, props.deviceName)
+  clearPendingTimer(key)
+  pendingTimers.set(key, setTimeout(() => {
+    pendingByKey.value = { ...pendingByKey.value, [key]: false }
+    optimisticByKey.value = { ...optimisticByKey.value, [key]: actualChecked(expose) }
+    pendingTimers.delete(key)
+  }, CONTROL_PENDING_TIMEOUT_MS))
 }
+
+watch(
+  () => sortedExposes.value.map(expose => props.state[featureKey(expose)]),
+  () => {
+    for (const expose of sortedExposes.value) {
+      const key = featureKey(expose)
+
+      if (!pendingByKey.value[key]) {
+        continue
+      }
+
+      clearPendingTimer(key)
+      pendingByKey.value = { ...pendingByKey.value, [key]: false }
+      optimisticByKey.value = { ...optimisticByKey.value, [key]: actualChecked(expose) }
+    }
+  },
+)
+
+onUnmounted(() => {
+  for (const key of pendingTimers.keys()) {
+    clearPendingTimer(key)
+  }
+})
 </script>
 
 <template>
@@ -56,6 +112,7 @@ function handleToggle(expose: BinaryExpose, value: boolean | undefined) {
 
           <USwitch
             :model-value="isChecked(expose)"
+            :loading="pendingByKey[featureKey(expose)]"
             @update:model-value="(value: boolean | undefined) => handleToggle(expose, value)"
           />
         </div>

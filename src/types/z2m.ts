@@ -162,6 +162,13 @@ export interface BridgePermitJoinResponse {
   [key: string]: unknown
 }
 
+export interface BridgeLoggingMessage {
+  level: 'error' | 'warning' | 'info' | 'debug' | string
+  message: string
+  namespace?: string
+  [key: string]: unknown
+}
+
 export interface BridgeEventBase {
   type: string
   data?: Record<string, unknown>
