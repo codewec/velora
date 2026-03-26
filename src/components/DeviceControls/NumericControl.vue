@@ -36,10 +36,6 @@ function actualValue() {
   return typeof props.stateValue === 'number' ? props.stateValue : (props.expose.value_min ?? 0)
 }
 
-function normalizeSliderValue(value: number | number[]) {
-  return Array.isArray(value) ? value[0] ?? actualValue() : value
-}
-
 function scheduleSend(nextValue: number) {
   if (debounceTimer) {
     clearTimeout(debounceTimer)
@@ -88,8 +84,8 @@ watch(
   { immediate: true },
 )
 
-function handleSliderUpdate(value: number | number[]) {
-  const nextValue = normalizeSliderValue(value)
+function handleSliderUpdate(value: number | undefined) {
+  const nextValue = typeof value === 'number' ? value : actualValue()
   model.value = nextValue
 
   if (syncingFromState) {

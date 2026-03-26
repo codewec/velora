@@ -13,9 +13,10 @@
     "lint:oxlint": "oxlint . --fix",
     "lint:eslint": "eslint . --fix --cache",
     "format": "prettier --write --experimental-cli src/",
+    "hooks:install": "git config core.hooksPath .githooks && chmod +x .githooks/pre-commit",
     "changelog": "changelogen --hideAuthorEmail --output CHANGELOG.md",
     "changelog:dry": "changelogen --dry --hideAuthorEmail --output CHANGELOG.md",
-    "release": "changelogen --release --hideAuthorEmail --output CHANGELOG.md"
+    "release": "changelogen --release --hideAuthorEmail --output CHANGELOG.md && node scripts/sync-addon-version.mjs"
   },
   "dependencies": {
     "@nuxt/ui": "^4.6.0",
