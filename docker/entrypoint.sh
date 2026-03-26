@@ -21,6 +21,10 @@ if [ -z "$CONNECTIONS_JSON" ]; then
   CONNECTIONS_JSON="undefined"
 fi
 
+echo "[velora] runtime proxy targets: ${PROXY_TARGETS_JSON}"
+echo "[velora] runtime frontend connections: ${CONNECTIONS_JSON}"
+echo "[velora] runtime apiUrl fallback: ${API_URL_JSON}"
+
 cat > "$RUNTIME_CONFIG_PATH" <<EOF
 window.__VELORA_CONFIG__ = {
   connections: ${CONNECTIONS_JSON},
@@ -56,7 +60,9 @@ if [ "$PROXY_TARGETS_JSON" != "[]" ]; then
   @z2m_proxy_${i} path /api/z2m/${id}/ws
   handle @z2m_proxy_${i} {
     rewrite * /api
-    reverse_proxy ${target}
+    reverse_proxy ${target} {
+      header_up Host {upstream_hostport}
+    }
   }
 EOF
   done
