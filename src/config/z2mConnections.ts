@@ -9,6 +9,20 @@ export interface Z2MConnectionConfig {
   url: string
 }
 
+function normalizeConnectionConfig(connection: Z2MConnectionConfig): Z2MConnectionConfig {
+  // Proxy connections must stay relative so the same bundle works both from the
+  // standalone root URL and from a Home Assistant ingress subpath. Absolute
+  // `/api/...` paths would bypass the ingress prefix and hit HA root instead.
+  if (connection.mode === 'proxy' && connection.url.startsWith('/')) {
+    return {
+      ...connection,
+      url: `.${connection.url}`,
+    }
+  }
+
+  return connection
+}
+
 function isConnectionConfig(value: unknown): value is Z2MConnectionConfig {
   if (typeof value !== 'object' || value === null) {
     return false
@@ -29,17 +43,17 @@ function parseConnectionsEnv(): Z2MConnectionConfig[] {
   const runtimeConnections = runtimeConfig.connections
 
   if (Array.isArray(runtimeConnections)) {
-    return runtimeConnections.filter(isConnectionConfig)
+    return runtimeConnections.filter(isConnectionConfig).map(normalizeConnectionConfig)
   }
 
   if (typeof runtimeConfig.apiUrl === 'string' && runtimeConfig.apiUrl) {
     return [
-      {
+      normalizeConnectionConfig({
         id: 'default',
         label: 'Default',
         mode: 'direct',
         url: runtimeConfig.apiUrl,
-      },
+      }),
     ]
   }
 
@@ -50,7 +64,7 @@ function parseConnectionsEnv(): Z2MConnectionConfig[] {
       const parsed = JSON.parse(raw) as unknown
 
       if (Array.isArray(parsed)) {
-        return parsed.filter(isConnectionConfig)
+        return parsed.filter(isConnectionConfig).map(normalizeConnectionConfig)
       }
     } catch {
       return []
@@ -59,12 +73,12 @@ function parseConnectionsEnv(): Z2MConnectionConfig[] {
 
   if (import.meta.env.VITE_Z2M_API_URL) {
     return [
-      {
+      normalizeConnectionConfig({
         id: 'default',
         label: 'Default',
         mode: 'direct',
         url: import.meta.env.VITE_Z2M_API_URL,
-      },
+      }),
     ]
   }
 

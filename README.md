@@ -60,7 +60,7 @@ docker compose -f docker-compose.example.yml up --build
       "id": "main",
       "label": "Main",
       "mode": "proxy",
-      "url": "/api/z2m/main/ws"
+      "url": "./api/z2m/main/ws"
     }
   ]
   ```
@@ -105,7 +105,7 @@ If `VELORA_CONNECTIONS_JSON` is omitted and `VELORA_PROXY_TARGETS_JSON` is provi
     "id": "main",
     "label": "Main",
     "mode": "proxy",
-    "url": "/api/z2m/main/ws"
+    "url": "./api/z2m/main/ws"
   }
 ]
 ```

@@ -19,7 +19,7 @@ Optional explicit frontend connection list.
 Example:
 
 ```json
-[{"id":"main","label":"Main","mode":"proxy","url":"/api/z2m/main/ws"}]
+[{"id":"main","label":"Main","mode":"proxy","url":"./api/z2m/main/ws"}]
 ```
 
 ### `proxy_targets_json`
@@ -32,9 +32,9 @@ Example:
 [{"id":"main","label":"Main","target":"http://zigbee2mqtt:8080"}]
 ```
 
-This generates the same-origin endpoint:
+This generates the same-origin endpoint relative to the current ingress path:
 
-- `/api/z2m/main/ws` -> `http://zigbee2mqtt:8080/api`
+- `./api/z2m/main/ws` -> `http://zigbee2mqtt:8080/api`
 
 ### `api_url_json`
 

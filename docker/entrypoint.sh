@@ -13,7 +13,7 @@ if [ -z "$CONNECTIONS_JSON" ] && [ "$PROXY_TARGETS_JSON" != "[]" ]; then
     id: .id,
     label: (.label // .id),
     mode: "proxy",
-    url: ("/api/z2m/" + .id + "/ws")
+    url: ("./api/z2m/" + .id + "/ws")
   }]')"
 fi
 
