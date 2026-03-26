@@ -12,7 +12,10 @@
     "lint": "run-s lint:*",
     "lint:oxlint": "oxlint . --fix",
     "lint:eslint": "eslint . --fix --cache",
-    "format": "prettier --write --experimental-cli src/"
+    "format": "prettier --write --experimental-cli src/",
+    "changelog": "changelogen --hideAuthorEmail --output CHANGELOG.md",
+    "changelog:dry": "changelogen --dry --hideAuthorEmail --output CHANGELOG.md",
+    "release": "changelogen --release --hideAuthorEmail --output CHANGELOG.md"
   },
   "dependencies": {
     "@nuxt/ui": "^4.6.0",
@@ -30,6 +33,7 @@
     "@vitejs/plugin-vue": "^6.0.4",
     "@vue/eslint-config-typescript": "^14.7.0",
     "@vue/tsconfig": "^0.9.0",
+    "changelogen": "^0.6.2",
     "eslint": "^10.0.3",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-oxlint": "~1.51.0",
