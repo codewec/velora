@@ -19,7 +19,7 @@ Optional explicit frontend connection list.
 Example:
 
 ```json
-[{"id":"main","label":"Main","mode":"proxy","url":"./api/z2m/main/ws"}]
+[{"id":"main","label":"Main","mode":"proxy","url":"45df7312-zigbee2mqtt:8099/api"}]
 ```
 
 ### `proxy_targets_json`
@@ -32,9 +32,13 @@ Example:
 [{"id":"main","label":"Main","target":"http://zigbee2mqtt:8080"}]
 ```
 
-This generates the same-origin endpoint relative to the current ingress path:
+Inside the Home Assistant add-on, this is converted to a frontend connection URL like:
 
-- `./api/z2m/main/ws` -> `http://zigbee2mqtt:8080/api`
+- `zigbee2mqtt:8080/api`
+
+The browser then reaches it through the Home Assistant ingress WebSocket proxy:
+
+- `./ws-proxy/zigbee2mqtt:8080/api`
 
 ### `api_url_json`
 

@@ -1,6 +1,6 @@
 import { readonly, ref, type Ref } from 'vue'
 
-import { getZ2MConnectionConfig } from '@/config/z2mConnections'
+import { getZ2MConnectionConfig, type Z2MConnectionConfig } from '@/config/z2mConnections'
 import { i18n } from '@/i18n'
 import { useLogsStore } from '@/stores/logs'
 import type { Z2MMessage } from '@/types/z2m'
@@ -61,7 +61,40 @@ function normalizeMessage(data: unknown): Z2MMessage | null {
   }
 }
 
-function createClient(connectionId: string, url: string): Z2MClient {
+function buildSocketUrl(connection: Z2MConnectionConfig): string {
+  const rawUrl = connection.url
+
+  if (connection.mode === 'proxy') {
+    if (rawUrl.startsWith('./') || rawUrl.startsWith('/')) {
+      const base = new URL(window.location.href)
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+      const resolved = new URL(rawUrl, base)
+
+      resolved.protocol = protocol
+      return resolved.toString()
+    }
+
+    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
+    const ingressBase = `${window.location.pathname}${window.location.pathname.endsWith('/') ? '' : '/'}`
+
+    // Home Assistant ingress exposes a ws-proxy path that Windfront also uses.
+    // We store proxy connections as `host:port/api` and expand them to the
+    // ingress-local WebSocket path only in the browser at runtime.
+    return `${protocol}://${window.location.host}${ingressBase}ws-proxy/${rawUrl}`
+  }
+
+  if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) {
+    const resolved = new URL(rawUrl)
+
+    resolved.protocol = resolved.protocol === 'https:' ? 'wss:' : 'ws:'
+    return resolved.toString()
+  }
+
+  return rawUrl
+}
+
+function createClient(connectionId: string, connection: Z2MConnectionConfig): Z2MClient {
+  const url = buildSocketUrl(connection)
   const isConnected = ref(false)
   const isReconnecting = ref(false)
   const metrics = ref<WebSocketMetrics>({
@@ -275,7 +308,15 @@ export function useZ2M(connectionId: string) {
   }
 
   const connection = getZ2MConnectionConfig(connectionId)
-  const client = createClient(connectionId, connection?.url ?? '')
+  const client = createClient(
+    connectionId,
+    connection ?? {
+      id: connectionId,
+      label: connectionId,
+      mode: 'direct',
+      url: '',
+    },
+  )
 
   clients.set(connectionId, client)
   return client
