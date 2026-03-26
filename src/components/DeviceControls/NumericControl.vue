@@ -36,42 +36,25 @@ function actualValue() {
   return typeof props.stateValue === 'number' ? props.stateValue : (props.expose.value_min ?? 0)
 }
 
-watch(
-  () => props.stateValue,
-  (value) => {
-    if (typeof value === 'number') {
-      syncingFromState = true
-      model.value = value
-      pending.value = false
-      clearPendingTimer()
-    }
-  },
-  { immediate: true },
-)
+function normalizeSliderValue(value: number | number[]) {
+  return Array.isArray(value) ? value[0] ?? actualValue() : value
+}
 
-watch(model, (value) => {
-  if (syncingFromState) {
-    syncingFromState = false
-    return
-  }
-
-  if (typeof value !== 'number') {
-    return
-  }
-
+function scheduleSend(nextValue: number) {
   if (debounceTimer) {
     clearTimeout(debounceTimer)
   }
 
-  // Slider interactions emit on every pointer move. We debounce the outgoing
-  // write so we keep the UI responsive without flooding Zigbee2MQTT with
-  // intermediate set commands for values the user never intended to keep.
+  // Slider interactions emit on every pointer move and on track clicks.
+  // We debounce the final write, but we do it from the slider event itself
+  // instead of a generic model watcher so both interaction modes are handled
+  // consistently by the control.
   debounceTimer = setTimeout(() => {
     const topic = `${devicesStore.deviceCommandTopic(props.connectionId, props.deviceName)}/set`
     pending.value = true
 
     const sent = useZ2M(props.connectionId).send(topic, {
-      [featureKey(props.expose) || 'value']: value,
+      [featureKey(props.expose) || 'value']: nextValue,
     })
 
     if (!sent) {
@@ -90,7 +73,36 @@ watch(model, (value) => {
       pendingTimer = null
     }, CONTROL_PENDING_TIMEOUT_MS)
   }, 150)
-})
+}
+
+watch(
+  () => props.stateValue,
+  (value) => {
+    if (typeof value === 'number') {
+      syncingFromState = true
+      model.value = value
+      pending.value = false
+      clearPendingTimer()
+    }
+  },
+  { immediate: true },
+)
+
+function handleSliderUpdate(value: number | number[]) {
+  const nextValue = normalizeSliderValue(value)
+  model.value = nextValue
+
+  if (syncingFromState) {
+    syncingFromState = false
+    return
+  }
+
+  if (!Number.isFinite(nextValue)) {
+    return
+  }
+
+  scheduleSend(nextValue)
+}
 
 onUnmounted(() => {
   if (debounceTimer) {
@@ -119,11 +131,12 @@ onUnmounted(() => {
       </div>
 
       <USlider
-        v-model="model"
+        :model-value="model"
         :disabled="pending"
         :min="expose.value_min ?? 0"
         :max="expose.value_max ?? 100"
         :step="expose.value_step ?? 1"
+        @update:model-value="handleSliderUpdate"
       />
     </div>
   </UCard>
