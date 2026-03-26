@@ -5,7 +5,7 @@ description: Alternative Zigbee2MQTT web UI
 url: https://github.com/codewec/velora
 ingress: true
 ingress_port: 8080
-panel_icon: mdi:zigbee
+panel_icon: mdi:graph-outline
 panel_title: Velora
 init: false
 startup: application
