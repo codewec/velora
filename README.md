@@ -134,15 +134,6 @@ Two workflows are included:
   - builds the production image on pushes, PRs, and manual runs
   - pushes to `ghcr.io/<owner>/<repo>` on non-PR runs
 
-## Home Assistant add-on: what is still needed
-
-Standalone Docker is now covered by:
-
-- runtime-configurable SPA image
-- Caddy static serving
-- generated same-origin proxy routes for multiple Zigbee2MQTT instances
-- GitHub Actions for CI and Docker builds
-
 Home Assistant add-on packaging is now included in `velora/`:
 
 - `repository.yaml`
@@ -196,10 +187,3 @@ Multiple instances example:
 ```yaml
 z2m_targets_json: "[{\"id\":\"main\",\"label\":\"Main\",\"target\":\"http://45df7312-zigbee2mqtt:8099\"},{\"id\":\"garage\",\"label\":\"Garage\",\"target\":\"http://45df7312-zigbee2mqtt-garage:8099\"}]"
 ```
-
-### What is still missing for a polished add-on release
-
-- add-on icon/logo assets
-- release process that updates the add-on image reference from `:dev` to a versioned image tag
-- optional add-on specific GitHub Actions build/publish workflow
-- real-world validation inside Home Assistant OS / ingress

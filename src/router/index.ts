@@ -9,18 +9,23 @@ import DeviceStateView from '@/views/DeviceStateView.vue'
 import InformationView from '@/views/InformationView.vue'
 import LogsView from '@/views/LogsView.vue'
 
+function resolvePreferredConnectionId() {
+  const savedConnectionId = getSavedConnectionId()
+
+  if (savedConnectionId && getZ2MConnectionConfig(savedConnectionId)) {
+    return savedConnectionId
+  }
+
+  return getDefaultConnectionId()
+}
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/',
       redirect: () => {
-        const savedConnectionId = getSavedConnectionId()
-        const connectionId = savedConnectionId && getZ2MConnectionConfig(savedConnectionId)
-          ? savedConnectionId
-          : getDefaultConnectionId()
-
-        return `/connections/${connectionId}`
+        return `/connections/${resolvePreferredConnectionId()}`
       },
     },
     {
@@ -69,6 +74,10 @@ const router = createRouter({
       component: NetworkMapView,
       props: true,
     },
+    {
+      path: '/:pathMatch(.*)*',
+      redirect: () => `/connections/${resolvePreferredConnectionId()}`,
+    },
   ],
 })
 
@@ -82,10 +91,7 @@ router.beforeEach((to) => {
   const connection = getZ2MConnectionConfig(rawConnectionId)
 
   if (!connection) {
-    const fallbackConnectionId = getSavedConnectionId()
-    const connectionId = fallbackConnectionId && getZ2MConnectionConfig(fallbackConnectionId)
-      ? fallbackConnectionId
-      : getDefaultConnectionId()
+    const connectionId = resolvePreferredConnectionId()
 
     if (to.name === 'device-exposes' || to.name === 'device-info' || to.name === 'device-state') {
       return `/connections/${connectionId}/devices/${to.params.id}/${String(to.name).replace('device-', '')}`
