@@ -19,11 +19,19 @@ function formatTemperature(value: number | null) {
 </script>
 
 <template>
-  <UCard class="border-slate-200/80 bg-white/80 dark:border-white/10 dark:bg-slate-950/50" :ui="{ body: 'p-4' }">
+  <UCard
+    class="border-slate-200/80 bg-white/80 dark:border-white/10 dark:bg-slate-950/50"
+    :ui="{ body: 'p-4' }"
+  >
     <div class="space-y-4">
       <div class="flex items-center gap-2">
-        <UIcon name="i-lucide-calendar-range" class="text-base text-slate-500 dark:text-slate-400" />
-        <p class="text-sm font-semibold text-slate-950 dark:text-white">{{ t('schedule.title') }}</p>
+        <UIcon
+          name="i-lucide-calendar-range"
+          class="text-base text-slate-500 dark:text-slate-400"
+        />
+        <p class="text-sm font-semibold text-slate-950 dark:text-white">
+          {{ t('schedule.title') }}
+        </p>
       </div>
 
       <div class="space-y-3">
@@ -33,8 +41,12 @@ function formatTemperature(value: number | null) {
           class="flex flex-col gap-2 rounded-2xl bg-slate-100/80 px-3 py-3 dark:bg-slate-900/60"
         >
           <div class="flex items-center justify-between gap-3">
-            <p class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ dayLabel(day.day) }}</p>
-            <p class="text-xs text-slate-500 dark:text-slate-400">{{ day.entries.length }} {{ t('schedule.slots') }}</p>
+            <p class="text-sm font-medium text-slate-700 dark:text-slate-200">
+              {{ dayLabel(day.day) }}
+            </p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+              {{ day.entries.length }} {{ t('schedule.slots') }}
+            </p>
           </div>
 
           <div class="flex flex-wrap gap-2">

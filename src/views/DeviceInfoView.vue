@@ -37,8 +37,8 @@ const bridgeStore = useBridgeStore()
 const devicesStore = useDevicesStore()
 const { t } = useI18n()
 
-const baseTopic = computed(() =>
-  bridgeStore.infoFor(props.connectionId)?.config?.mqtt?.base_topic || 'zigbee2mqtt',
+const baseTopic = computed(
+  () => bridgeStore.infoFor(props.connectionId)?.config?.mqtt?.base_topic || 'zigbee2mqtt',
 )
 const homeassistantEnabled = computed(() =>
   Boolean(bridgeStore.infoFor(props.connectionId)?.config?.homeassistant?.enabled),
@@ -65,25 +65,58 @@ function formatLastSeen(timestamp: number | null) {
 }
 
 function metadataRows(device: Device) {
-  const reportedLastSeen = devicesStore.deviceReportedLastSeen(props.connectionId, device.friendly_name)
+  const reportedLastSeen = devicesStore.deviceReportedLastSeen(
+    props.connectionId,
+    device.friendly_name,
+  )
   const softwareBuild = device.software_build_id || t('app.unknown')
   const dateCode = device.date_code ? ` (${device.date_code})` : ''
 
   return [
     { label: t('deviceInfo.ieeeAddress'), value: device.ieee_address },
     { label: t('deviceInfo.oui'), value: ouiVendor(device.ieee_address) },
-    { label: t('deviceInfo.vendor'), value: device.definition?.vendor || device.manufacturer || t('app.unknown') },
-    { label: t('deviceInfo.model'), value: device.definition?.model || device.model_id || t('app.unknown') },
-    { label: t('deviceInfo.zigbeeModel'), value: `${device.model_id || t('app.unknown')} (${device.manufacturer || t('app.unknown')})` },
+    {
+      label: t('deviceInfo.vendor'),
+      value: device.definition?.vendor || device.manufacturer || t('app.unknown'),
+    },
+    {
+      label: t('deviceInfo.model'),
+      value: device.definition?.model || device.model_id || t('app.unknown'),
+    },
+    {
+      label: t('deviceInfo.zigbeeModel'),
+      value: `${device.model_id || t('app.unknown')} (${device.manufacturer || t('app.unknown')})`,
+    },
     { label: t('deviceInfo.type'), value: device.type },
     { label: t('deviceInfo.powerSource'), value: device.power_source || t('app.unknown') },
-    { label: t('deviceInfo.networkAddress'), value: device.network_address != null ? `${device.network_address} (${formatHex(device.network_address)})` : t('app.unknown') },
+    {
+      label: t('deviceInfo.networkAddress'),
+      value:
+        device.network_address != null
+          ? `${device.network_address} (${formatHex(device.network_address)})`
+          : t('app.unknown'),
+    },
     { label: t('deviceInfo.mqttTopic'), value: `${baseTopic.value}/${device.friendly_name}` },
     { label: t('deviceInfo.softwareBuild'), value: `${softwareBuild}${dateCode}` },
     { label: t('devicePage.lastSeen'), value: formatLastSeen(reportedLastSeen) },
-    { label: t('deviceInfo.interviewCompleted'), value: device.interview_completed == null ? t('app.unknown') : (device.interview_completed ? t('app.yes') : t('app.no')) },
-    { label: t('deviceInfo.supported'), value: device.supported == null ? t('app.unknown') : (device.supported ? t('app.yes') : t('app.no')) },
-    { label: t('app.disabled'), value: device.disabled == null ? t('app.no') : (device.disabled ? t('app.yes') : t('app.no')) },
+    {
+      label: t('deviceInfo.interviewCompleted'),
+      value:
+        device.interview_completed == null
+          ? t('app.unknown')
+          : device.interview_completed
+            ? t('app.yes')
+            : t('app.no'),
+    },
+    {
+      label: t('deviceInfo.supported'),
+      value:
+        device.supported == null ? t('app.unknown') : device.supported ? t('app.yes') : t('app.no'),
+    },
+    {
+      label: t('app.disabled'),
+      value: device.disabled == null ? t('app.no') : device.disabled ? t('app.yes') : t('app.no'),
+    },
   ]
 }
 
@@ -188,7 +221,10 @@ function openRemoveModal() {
 }
 
 async function runDangerAction(
-  topic: 'bridge/request/device/configure' | 'bridge/request/device/interview' | 'bridge/request/device/remove',
+  topic:
+    | 'bridge/request/device/configure'
+    | 'bridge/request/device/interview'
+    | 'bridge/request/device/remove',
   payload: Record<string, unknown>,
   successTitle: string,
   successDescription?: string,
@@ -272,9 +308,14 @@ async function removeDevice(device: Device) {
   <DevicePageShell :connection-id="connectionId" :id="id" active-tab="info">
     <template #default="{ device }">
       <div class="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
-        <UCard class="border-slate-200/80 bg-white/80 dark:border-white/10 dark:bg-slate-950/50" :ui="{ body: 'p-5 sm:p-6' }">
+        <UCard
+          class="border-slate-200/80 bg-white/80 dark:border-white/10 dark:bg-slate-950/50"
+          :ui="{ body: 'p-5 sm:p-6' }"
+        >
           <div class="space-y-4">
-            <p class="text-sm uppercase tracking-[0.25em] text-slate-500">{{ t('app.metadata') }}</p>
+            <p class="text-sm uppercase tracking-[0.25em] text-slate-500">
+              {{ t('app.metadata') }}
+            </p>
 
             <dl class="grid gap-x-6 gap-y-4 md:grid-cols-2">
               <div>
@@ -305,7 +346,11 @@ async function removeDevice(device: Device) {
                   />
                 </dt>
                 <dd class="mt-1 text-sm text-slate-700 dark:text-slate-300">
-                  {{ device.description || device.definition?.description || t('deviceInfo.descriptionFallback') }}
+                  {{
+                    device.description ||
+                    device.definition?.description ||
+                    t('deviceInfo.descriptionFallback')
+                  }}
                 </dd>
               </div>
 
@@ -322,7 +367,9 @@ async function removeDevice(device: Device) {
         </UCard>
 
         <div class="space-y-6">
-          <div class="flex min-h-72 items-center justify-center overflow-hidden rounded-3xl bg-slate-100/80 p-6 ring ring-slate-200 backdrop-blur dark:bg-slate-900/60 dark:ring-white/10">
+          <div
+            class="flex min-h-72 items-center justify-center overflow-hidden rounded-3xl bg-slate-100/80 p-6 ring ring-slate-200 backdrop-blur dark:bg-slate-900/60 dark:ring-white/10"
+          >
             <img
               v-if="deviceImageUrl(device) && !imageFailed"
               :src="deviceImageUrl(device) || undefined"
@@ -341,7 +388,9 @@ async function removeDevice(device: Device) {
           >
             <div class="space-y-4">
               <div>
-                <p class="text-sm uppercase tracking-[0.25em] text-rose-500 dark:text-rose-300">{{ t('devicePage.dangerZone') }}</p>
+                <p class="text-sm uppercase tracking-[0.25em] text-rose-500 dark:text-rose-300">
+                  {{ t('devicePage.dangerZone') }}
+                </p>
                 <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">
                   {{ t('devicePage.dangerZoneDescription') }}
                 </p>
@@ -379,12 +428,7 @@ async function removeDevice(device: Device) {
         <template #body>
           <div class="space-y-4">
             <UFormField :label="t('devicePage.description')" name="description">
-              <UTextarea
-                v-model="descriptionDraft"
-                :rows="4"
-                autoresize
-                class="w-full"
-              />
+              <UTextarea v-model="descriptionDraft" :rows="4" autoresize class="w-full" />
             </UFormField>
           </div>
         </template>
@@ -440,7 +484,11 @@ async function removeDevice(device: Device) {
             <UButton color="neutral" variant="ghost" @click="isReconfigureModalOpen = false">
               {{ t('app.cancel') }}
             </UButton>
-            <UButton color="warning" :loading="isSubmittingDangerAction" @click="device && reconfigureDevice(device)">
+            <UButton
+              color="warning"
+              :loading="isSubmittingDangerAction"
+              @click="device && reconfigureDevice(device)"
+            >
               {{ t('devicePage.reconfigure') }}
             </UButton>
           </div>
@@ -459,7 +507,11 @@ async function removeDevice(device: Device) {
             <UButton color="neutral" variant="ghost" @click="isInterviewModalOpen = false">
               {{ t('app.cancel') }}
             </UButton>
-            <UButton color="warning" :loading="isSubmittingDangerAction" @click="device && interviewDevice(device)">
+            <UButton
+              color="warning"
+              :loading="isSubmittingDangerAction"
+              @click="device && interviewDevice(device)"
+            >
               {{ t('devicePage.interviewDevice') }}
             </UButton>
           </div>
@@ -492,7 +544,11 @@ async function removeDevice(device: Device) {
             <UButton color="neutral" variant="ghost" @click="isRemoveModalOpen = false">
               {{ t('app.cancel') }}
             </UButton>
-            <UButton color="error" :loading="isSubmittingDangerAction" @click="device && removeDevice(device)">
+            <UButton
+              color="error"
+              :loading="isSubmittingDangerAction"
+              @click="device && removeDevice(device)"
+            >
               {{ t('devicePage.removeDevice') }}
             </UButton>
           </div>

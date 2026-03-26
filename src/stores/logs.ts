@@ -24,7 +24,10 @@ export const useLogsStore = defineStore('logs', () => {
     return entries.value[connectionId] ?? []
   }
 
-  function addLog(connectionId: string, entry: Omit<LogEntry, 'id' | 'connectionId' | 'timestamp' | 'time'>) {
+  function addLog(
+    connectionId: string,
+    entry: Omit<LogEntry, 'id' | 'connectionId' | 'timestamp' | 'time'>,
+  ) {
     const next: LogEntry = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
       connectionId,

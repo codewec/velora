@@ -109,17 +109,16 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <UCard class="border-slate-200/80 bg-white/80 dark:border-white/10 dark:bg-slate-950/50" :ui="{ body: 'p-4' }">
+  <UCard
+    class="border-slate-200/80 bg-white/80 dark:border-white/10 dark:bg-slate-950/50"
+    :ui="{ body: 'p-4' }"
+  >
     <div class="space-y-4">
       <div class="flex items-center justify-between gap-3">
         <FeatureHeader :expose="expose" />
 
         <div class="flex min-w-24 items-center justify-end gap-2">
-          <UIcon
-            v-if="pending"
-            name="i-lucide-loader-circle"
-            class="animate-spin text-slate-400"
-          />
+          <UIcon v-if="pending" name="i-lucide-loader-circle" class="animate-spin text-slate-400" />
           <span class="text-right text-2xl font-semibold text-slate-800 dark:text-slate-100">
             {{ model }}{{ expose.unit || '' }}
           </span>

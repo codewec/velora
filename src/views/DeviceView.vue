@@ -22,7 +22,9 @@ const { enabled: historyEnabled } = useIndicatorHistoryPreference()
 
 const device = computed(() => devicesStore.deviceById(props.connectionId, props.id))
 const state = computed(() =>
-  device.value ? devicesStore.deviceStatesFor(props.connectionId)[device.value.friendly_name] ?? {} : {},
+  device.value
+    ? (devicesStore.deviceStatesFor(props.connectionId)[device.value.friendly_name] ?? {})
+    : {},
 )
 
 function flattenExposes(exposes: Expose[] | undefined): Expose[] {
@@ -128,14 +130,19 @@ function controlComponent(expose: Expose) {
 
           <div>
             <p class="text-sm uppercase tracking-[0.25em] text-slate-500">Current state</p>
-            <pre class="mt-3 overflow-x-auto rounded-2xl bg-slate-100 p-4 text-xs text-slate-700 dark:bg-slate-950/80 dark:text-slate-300">{{ JSON.stringify(state, null, 2) }}</pre>
+            <pre
+              class="mt-3 overflow-x-auto rounded-2xl bg-slate-100 p-4 text-xs text-slate-700 dark:bg-slate-950/80 dark:text-slate-300"
+              >{{ JSON.stringify(state, null, 2) }}</pre
+            >
           </div>
         </div>
 
         <div class="space-y-4">
           <div class="flex items-center justify-between">
             <p class="text-sm uppercase tracking-[0.25em] text-slate-500">Indicators</p>
-            <p class="text-sm text-slate-500 dark:text-slate-400">{{ readableExposes.length }} readable exposes</p>
+            <p class="text-sm text-slate-500 dark:text-slate-400">
+              {{ readableExposes.length }} readable exposes
+            </p>
           </div>
 
           <div v-if="readableExposes.length" class="grid gap-4">
@@ -159,11 +166,16 @@ function controlComponent(expose: Expose) {
 
           <div class="flex items-center justify-between">
             <p class="text-sm uppercase tracking-[0.25em] text-slate-500">Controls</p>
-            <p class="text-sm text-slate-500 dark:text-slate-400">{{ writableExposes.length }} writable exposes</p>
+            <p class="text-sm text-slate-500 dark:text-slate-400">
+              {{ writableExposes.length }} writable exposes
+            </p>
           </div>
 
           <div v-if="writableExposes.length" class="grid gap-4">
-            <template v-for="expose in writableExposes" :key="`${expose.property || expose.name}-${expose.type}`">
+            <template
+              v-for="expose in writableExposes"
+              :key="`${expose.property || expose.name}-${expose.type}`"
+            >
               <component
                 :is="controlComponent(expose) || 'div'"
                 v-if="controlComponent(expose)"

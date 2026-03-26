@@ -46,9 +46,7 @@ function handleToggle(value: boolean | undefined) {
   pending.value = true
   const topic = `${devicesStore.deviceCommandTopic(props.connectionId, props.deviceName)}/set`
 
-  const payload = value
-    ? (props.expose.value_on ?? 'ON')
-    : (props.expose.value_off ?? 'OFF')
+  const payload = value ? (props.expose.value_on ?? 'ON') : (props.expose.value_off ?? 'OFF')
 
   const sent = useZ2M(props.connectionId).send(topic, {
     [featureKey(props.expose) || 'state']: payload,
@@ -80,7 +78,10 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <UCard class="border-slate-200/80 bg-white/80 dark:border-white/10 dark:bg-slate-950/50" :ui="{ body: 'p-4' }">
+  <UCard
+    class="border-slate-200/80 bg-white/80 dark:border-white/10 dark:bg-slate-950/50"
+    :ui="{ body: 'p-4' }"
+  >
     <div class="flex items-center justify-between gap-4">
       <FeatureHeader :expose="expose" />
 

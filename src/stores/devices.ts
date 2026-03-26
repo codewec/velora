@@ -8,7 +8,7 @@ export const useDevicesStore = defineStore('devices', () => {
   const devicesByConnection = ref<Record<string, Device[]>>({})
   const deviceStatesByConnection = ref<Record<string, Record<string, DeviceState>>>({})
   const loadingByConnection = ref<Record<string, boolean>>({})
-  const activityByConnection = ref<Record<string, Record<string, { rx: boolean, tx: boolean }>>>({})
+  const activityByConnection = ref<Record<string, Record<string, { rx: boolean; tx: boolean }>>>({})
   const observedLastSeenByConnection = ref<Record<string, Record<string, number>>>({})
   const reportedLastSeenByConnection = ref<Record<string, Record<string, number>>>({})
 
@@ -68,7 +68,7 @@ export const useDevicesStore = defineStore('devices', () => {
   }
 
   function deviceCommandTopic(connectionId: string, friendlyName: string) {
-    const device = devicesFor(connectionId).find(item => item.friendly_name === friendlyName)
+    const device = devicesFor(connectionId).find((item) => item.friendly_name === friendlyName)
 
     // Zigbee2MQTT logs outgoing writes against the stable device topic.
     // Using IEEE address keeps our command topics aligned with z2m and avoids
@@ -113,7 +113,12 @@ export const useDevicesStore = defineStore('devices', () => {
     return null
   }
 
-  function setActivityFlag(connectionId: string, friendlyName: string, direction: 'rx' | 'tx', active: boolean) {
+  function setActivityFlag(
+    connectionId: string,
+    friendlyName: string,
+    direction: 'rx' | 'tx',
+    active: boolean,
+  ) {
     const currentActivity = activityFor(connectionId)
     const currentDeviceActivity = currentActivity[friendlyName] ?? { rx: false, tx: false }
 
@@ -140,10 +145,13 @@ export const useDevicesStore = defineStore('devices', () => {
       clearTimeout(existingTimer)
     }
 
-    timers.set(timerKey, setTimeout(() => {
-      setActivityFlag(connectionId, friendlyName, direction, false)
-      timers.delete(timerKey)
-    }, 700))
+    timers.set(
+      timerKey,
+      setTimeout(() => {
+        setActivityFlag(connectionId, friendlyName, direction, false)
+        timers.delete(timerKey)
+      }, 700),
+    )
   }
 
   function setDevices(connectionId: string, nextDevices: Device[]) {
@@ -161,9 +169,7 @@ export const useDevicesStore = defineStore('devices', () => {
     devicesByConnection.value = {
       ...devicesByConnection.value,
       [connectionId]: devicesFor(connectionId).map((device) =>
-        device.ieee_address === ieeeAddress
-          ? { ...device, description }
-          : device,
+        device.ieee_address === ieeeAddress ? { ...device, description } : device,
       ),
     }
   }
@@ -197,7 +203,7 @@ export const useDevicesStore = defineStore('devices', () => {
   }
 
   function renameDevice(connectionId: string, ieeeAddress: string, friendlyName: string) {
-    const previous = devicesFor(connectionId).find(device => device.ieee_address === ieeeAddress)
+    const previous = devicesFor(connectionId).find((device) => device.ieee_address === ieeeAddress)
 
     if (!previous || previous.friendly_name === friendlyName) {
       return
@@ -213,9 +219,7 @@ export const useDevicesStore = defineStore('devices', () => {
     devicesByConnection.value = {
       ...devicesByConnection.value,
       [connectionId]: devicesFor(connectionId).map((device) =>
-        device.ieee_address === ieeeAddress
-          ? { ...device, friendly_name: friendlyName }
-          : device,
+        device.ieee_address === ieeeAddress ? { ...device, friendly_name: friendlyName } : device,
       ),
     }
 
@@ -282,7 +286,8 @@ export const useDevicesStore = defineStore('devices', () => {
   }
 
   function deviceWithState(connectionId: string, friendlyName: string) {
-    const device = devicesFor(connectionId).find((entry) => entry.friendly_name === friendlyName) ?? null
+    const device =
+      devicesFor(connectionId).find((entry) => entry.friendly_name === friendlyName) ?? null
 
     if (!device) {
       return null

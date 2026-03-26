@@ -14,10 +14,7 @@ import type {
   NetworkMapValue,
 } from '@/types/z2m'
 
-function upsertSession(
-  sessions: InterviewSession[],
-  next: InterviewSession,
-): InterviewSession[] {
+function upsertSession(sessions: InterviewSession[], next: InterviewSession): InterviewSession[] {
   const index = sessions.findIndex((session) => session.ieeeAddress === next.ieeeAddress)
 
   if (index === -1) {
@@ -59,7 +56,10 @@ export const useBridgeStore = defineStore('bridge', () => {
   const networkMapErrorByConnection = ref<Record<string, string | null>>({})
 
   const totalActiveSessions = computed(() =>
-    Object.values(activeSessionsByConnection.value).reduce((count, sessions) => count + sessions.length, 0),
+    Object.values(activeSessionsByConnection.value).reduce(
+      (count, sessions) => count + sessions.length,
+      0,
+    ),
   )
 
   function infoFor(connectionId: string) {
@@ -123,9 +123,10 @@ export const useBridgeStore = defineStore('bridge', () => {
     const permitJoinEnd = nextInfo.permit_join_end
     const currentEpochSeconds = Math.floor(Date.now() / 1000)
     const currentEpochMilliseconds = Date.now()
-    const seconds = permitJoinEnd > 10_000_000_000
-      ? Math.max(0, Math.ceil((permitJoinEnd - currentEpochMilliseconds) / 1000))
-      : Math.max(0, permitJoinEnd - currentEpochSeconds)
+    const seconds =
+      permitJoinEnd > 10_000_000_000
+        ? Math.max(0, Math.ceil((permitJoinEnd - currentEpochMilliseconds) / 1000))
+        : Math.max(0, permitJoinEnd - currentEpochSeconds)
 
     permitJoinTimeoutByConnection.value = {
       ...permitJoinTimeoutByConnection.value,
@@ -206,7 +207,11 @@ export const useBridgeStore = defineStore('bridge', () => {
       return
     }
 
-    if (response.data?.type !== 'raw' || typeof response.data.value !== 'object' || response.data.value === null) {
+    if (
+      response.data?.type !== 'raw' ||
+      typeof response.data.value !== 'object' ||
+      response.data.value === null
+    ) {
       networkMapErrorByConnection.value = {
         ...networkMapErrorByConnection.value,
         [connectionId]: 'Unsupported network map response',
@@ -229,9 +234,10 @@ export const useBridgeStore = defineStore('bridge', () => {
       return
     }
 
-    const status = event.type === 'device_joined'
-      ? 'joined'
-      : normalizeInterviewStatus('status' in event.data ? event.data.status : undefined)
+    const status =
+      event.type === 'device_joined'
+        ? 'joined'
+        : normalizeInterviewStatus('status' in event.data ? event.data.status : undefined)
     const friendlyName =
       typeof event.data.friendly_name === 'string'
         ? event.data.friendly_name
@@ -250,7 +256,7 @@ export const useBridgeStore = defineStore('bridge', () => {
       activeSessionsByConnection.value = {
         ...activeSessionsByConnection.value,
         [connectionId]: activeSessions(connectionId).filter(
-        (item) => item.ieeeAddress !== session.ieeeAddress,
+          (item) => item.ieeeAddress !== session.ieeeAddress,
         ),
       }
       completedSessionsByConnection.value = {

@@ -41,7 +41,7 @@ export const useIndicatorHistoryStore = defineStore('indicator-history', () => {
     historyByConnection.value = {
       ...historyByConnection.value,
       [connectionId]: {
-        ...(historyByConnection.value[connectionId] ?? {}),
+        ...historyByConnection.value[connectionId],
         [deviceName]: {
           ...deviceHistory,
           [feature]: [{ value, changedAt }, ...featureEntries],

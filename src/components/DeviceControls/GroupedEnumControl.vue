@@ -48,7 +48,10 @@ function modelValue(expose: EnumExpose) {
   return typeof value === 'string' ? value : undefined
 }
 
-function handleUpdate(expose: EnumExpose, value: string | number | boolean | Record<string, unknown> | undefined) {
+function handleUpdate(
+  expose: EnumExpose,
+  value: string | number | boolean | Record<string, unknown> | undefined,
+) {
   if (typeof value !== 'string') {
     return
   }
@@ -74,19 +77,22 @@ function handleUpdate(expose: EnumExpose, value: string | number | boolean | Rec
 
   devicesStore.markDeviceTx(props.connectionId, props.deviceName)
   clearPendingTimer(key)
-  pendingTimers.set(key, setTimeout(() => {
-    const actual = props.state[key]
-    pendingByKey.value = { ...pendingByKey.value, [key]: false }
-    optimisticByKey.value = {
-      ...optimisticByKey.value,
-      [key]: typeof actual === 'string' ? actual : undefined,
-    }
-    pendingTimers.delete(key)
-  }, CONTROL_PENDING_TIMEOUT_MS))
+  pendingTimers.set(
+    key,
+    setTimeout(() => {
+      const actual = props.state[key]
+      pendingByKey.value = { ...pendingByKey.value, [key]: false }
+      optimisticByKey.value = {
+        ...optimisticByKey.value,
+        [key]: typeof actual === 'string' ? actual : undefined,
+      }
+      pendingTimers.delete(key)
+    }, CONTROL_PENDING_TIMEOUT_MS),
+  )
 }
 
 watch(
-  () => sortedExposes.value.map(expose => props.state[featureKey(expose)]),
+  () => sortedExposes.value.map((expose) => props.state[featureKey(expose)]),
   () => {
     for (const expose of sortedExposes.value) {
       const key = featureKey(expose)
@@ -114,7 +120,10 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <UCard class="border-slate-200/80 bg-white/80 dark:border-white/10 dark:bg-slate-950/50" :ui="{ body: 'p-4' }">
+  <UCard
+    class="border-slate-200/80 bg-white/80 dark:border-white/10 dark:bg-slate-950/50"
+    :ui="{ body: 'p-4' }"
+  >
     <div class="space-y-4">
       <FeatureHeader v-if="primaryExpose" :expose="primaryExpose" hide-endpoint />
 
@@ -134,7 +143,10 @@ onUnmounted(() => {
               :model-value="modelValue(expose)"
               :loading="pendingByKey[featureKey(expose)]"
               placeholder="Select value"
-              @update:model-value="(value: string | number | boolean | Record<string, unknown> | undefined) => handleUpdate(expose, value)"
+              @update:model-value="
+                (value: string | number | boolean | Record<string, unknown> | undefined) =>
+                  handleUpdate(expose, value)
+              "
             />
           </div>
         </div>

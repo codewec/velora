@@ -42,16 +42,17 @@ export function isScheduleKey(value: string) {
 export function parseScheduleValue(value: string): ScheduleEntry[] {
   return value
     .split(/\s+/)
-    .map(chunk => chunk.trim())
+    .map((chunk) => chunk.trim())
     .filter(Boolean)
     .map((chunk) => {
       const [time, temperature] = chunk.split('/')
 
       return {
         time: time || '--:--',
-        temperature: typeof temperature === 'string' && temperature.length > 0
-          ? Number.parseFloat(temperature)
-          : null,
+        temperature:
+          typeof temperature === 'string' && temperature.length > 0
+            ? Number.parseFloat(temperature)
+            : null,
       }
     })
 }
@@ -65,12 +66,14 @@ export function scheduleDaysFromState(state: Record<string, unknown>): DaySchedu
       return []
     }
 
-    return [{
-      day,
-      key,
-      value: raw,
-      entries: parseScheduleValue(raw),
-    }]
+    return [
+      {
+        day,
+        key,
+        value: raw,
+        entries: parseScheduleValue(raw),
+      },
+    ]
   })
 }
 
@@ -90,15 +93,16 @@ export function scheduleEditorDaysFromState(state: Record<string, unknown>): Day
 
 export function serializeScheduleValue(entries: ScheduleEntry[]) {
   return sortScheduleEntries(entries)
-    .filter(entry => entry.time.trim())
+    .filter((entry) => entry.time.trim())
     .map((entry) => {
-      const temperature = entry.temperature == null || Number.isNaN(entry.temperature)
-        ? ''
-        : entry.temperature.toFixed(1)
+      const temperature =
+        entry.temperature == null || Number.isNaN(entry.temperature)
+          ? ''
+          : entry.temperature.toFixed(1)
 
       return `${entry.time}/${temperature}`
     })
-    .filter(value => !value.endsWith('/'))
+    .filter((value) => !value.endsWith('/'))
     .join(' ')
 }
 

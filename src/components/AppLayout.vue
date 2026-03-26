@@ -13,43 +13,57 @@ const { t } = useI18n()
 const open = ref(false)
 
 const connectionId = computed(() => String(route.params.connectionId || getDefaultConnectionId()))
-const isDeviceRoute = computed(() =>
-  route.name === 'device-exposes' || route.name === 'device-info' || route.name === 'device-state',
+const isDeviceRoute = computed(
+  () =>
+    route.name === 'device-exposes' ||
+    route.name === 'device-info' ||
+    route.name === 'device-state',
 )
 
-const links = computed<NavigationMenuItem[][]>(() => [[{
-  label: t('app.devices'),
-  icon: 'i-lucide-layout-grid',
-  to: `/connections/${connectionId.value}`,
-  exact: !isDeviceRoute.value && route.name !== 'logs' && route.name !== 'information' && route.name !== 'network-map',
-  onSelect: () => {
-    open.value = false
-  },
-}, {
-  label: t('app.networkMap'),
-  icon: 'i-lucide-git-branch-plus',
-  to: `/connections/${connectionId.value}/network-map`,
-  exact: route.name === 'network-map',
-  onSelect: () => {
-    open.value = false
-  },
-}, {
-  label: t('app.information'),
-  icon: 'i-lucide-info',
-  to: `/connections/${connectionId.value}/information`,
-  exact: route.name === 'information',
-  onSelect: () => {
-    open.value = false
-  },
-}, {
-  label: t('app.events'),
-  icon: 'i-lucide-logs',
-  to: `/connections/${connectionId.value}/logs`,
-  exact: route.name === 'logs',
-  onSelect: () => {
-    open.value = false
-  },
-}]])
+const links = computed<NavigationMenuItem[][]>(() => [
+  [
+    {
+      label: t('app.devices'),
+      icon: 'i-lucide-layout-grid',
+      to: `/connections/${connectionId.value}`,
+      exact:
+        !isDeviceRoute.value &&
+        route.name !== 'logs' &&
+        route.name !== 'information' &&
+        route.name !== 'network-map',
+      onSelect: () => {
+        open.value = false
+      },
+    },
+    {
+      label: t('app.networkMap'),
+      icon: 'i-lucide-git-branch-plus',
+      to: `/connections/${connectionId.value}/network-map`,
+      exact: route.name === 'network-map',
+      onSelect: () => {
+        open.value = false
+      },
+    },
+    {
+      label: t('app.information'),
+      icon: 'i-lucide-info',
+      to: `/connections/${connectionId.value}/information`,
+      exact: route.name === 'information',
+      onSelect: () => {
+        open.value = false
+      },
+    },
+    {
+      label: t('app.events'),
+      icon: 'i-lucide-logs',
+      to: `/connections/${connectionId.value}/logs`,
+      exact: route.name === 'logs',
+      onSelect: () => {
+        open.value = false
+      },
+    },
+  ],
+])
 </script>
 
 <template>

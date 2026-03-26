@@ -62,14 +62,16 @@ export function useErrorLogToasts() {
             duration: ERROR_TOAST_DURATION_MS,
             progress: true,
             close: true,
-            actions: [{
-              label: t('logsPage.details'),
-              color: 'neutral',
-              variant: 'outline',
-              onClick: () => {
-                logDetailsStore.open(entry)
+            actions: [
+              {
+                label: t('logsPage.details'),
+                color: 'neutral',
+                variant: 'outline',
+                onClick: () => {
+                  logDetailsStore.open(entry)
+                },
               },
-            }],
+            ],
           })
         }
       }

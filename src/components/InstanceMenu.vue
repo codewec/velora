@@ -13,13 +13,15 @@ defineProps<{
 const route = useRoute()
 const router = useRouter()
 
-const connections = ref(getZ2MConnectionConfigs().map((connection) => ({
-  label: connection.label,
-  id: connection.id,
-  avatar: {
-    icon: 'i-lucide-radio-tower',
-  },
-})))
+const connections = ref(
+  getZ2MConnectionConfigs().map((connection) => ({
+    label: connection.label,
+    id: connection.id,
+    avatar: {
+      icon: 'i-lucide-radio-tower',
+    },
+  })),
+)
 
 const selectedConnection = computed(() => {
   const currentId = String(route.params.connectionId || getDefaultConnectionId())
@@ -27,7 +29,12 @@ const selectedConnection = computed(() => {
 })
 
 function buildTargetPath(connectionId: string) {
-  if ((route.name === 'device-exposes' || route.name === 'device-info' || route.name === 'device-state') && typeof route.params.id === 'string') {
+  if (
+    (route.name === 'device-exposes' ||
+      route.name === 'device-info' ||
+      route.name === 'device-state') &&
+    typeof route.params.id === 'string'
+  ) {
     const tab = String(route.name).replace('device-', '')
     return `/connections/${connectionId}/devices/${route.params.id}/${tab}`
   }
@@ -48,13 +55,15 @@ function buildTargetPath(connectionId: string) {
 }
 
 const items = computed<DropdownMenuItem[][]>(() => {
-  return [connections.value.map(connection => ({
-    ...connection,
-    onSelect() {
-      saveConnectionId(connection.id)
-      router.push(buildTargetPath(connection.id))
-    },
-  }))]
+  return [
+    connections.value.map((connection) => ({
+      ...connection,
+      onSelect() {
+        saveConnectionId(connection.id)
+        router.push(buildTargetPath(connection.id))
+      },
+    })),
+  ]
 })
 </script>
 
@@ -68,7 +77,7 @@ const items = computed<DropdownMenuItem[][]>(() => {
       v-bind="{
         ...selectedConnection,
         label: collapsed ? undefined : selectedConnection?.label,
-        trailingIcon: collapsed ? undefined : 'i-lucide-chevrons-up-down'
+        trailingIcon: collapsed ? undefined : 'i-lucide-chevrons-up-down',
       }"
       color="neutral"
       variant="ghost"
@@ -77,7 +86,7 @@ const items = computed<DropdownMenuItem[][]>(() => {
       class="data-[state=open]:bg-elevated"
       :class="[!collapsed && 'py-2']"
       :ui="{
-        trailingIcon: 'text-dimmed'
+        trailingIcon: 'text-dimmed',
       }"
     />
   </UDropdownMenu>

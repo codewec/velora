@@ -49,12 +49,14 @@ export function parseBridgeLoggingPayload(raw: string): ParsedBridgeLoggingPaylo
       return null
     }
 
-    const deviceName = parsed.message.match(/to '([^']+)' failed/i)?.[1]
-      ?? parsed.message.match(/from '([^']+)'/i)?.[1]
-      ?? null
-    const shortReason = parsed.message.match(/\(([^()]+)\)\s*'?$/)?.[1]
-      ?? parsed.message.match(/failed:\s*'?(.*)$/i)?.[1]
-      ?? null
+    const deviceName =
+      parsed.message.match(/to '([^']+)' failed/i)?.[1] ??
+      parsed.message.match(/from '([^']+)'/i)?.[1] ??
+      null
+    const shortReason =
+      parsed.message.match(/\(([^()]+)\)\s*'?$/)?.[1] ??
+      parsed.message.match(/failed:\s*'?(.*)$/i)?.[1] ??
+      null
 
     return {
       level: typeof parsed.level === 'string' ? parsed.level : undefined,

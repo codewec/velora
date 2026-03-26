@@ -242,7 +242,6 @@ function clearLogs() {
           <p class="text-sm text-muted">{{ t('logsPage.noEventsDescription') }}</p>
         </div>
       </UCard>
-
     </template>
   </UDashboardPanel>
 </template>

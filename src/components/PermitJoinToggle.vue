@@ -97,7 +97,10 @@ onUnmounted(() => {
       />
     </UDropdownMenu>
 
-    <span v-if="bridgeStore.permitJoin(connectionId)" class="text-sm text-muted min-w-11 text-right">
+    <span
+      v-if="bridgeStore.permitJoin(connectionId)"
+      class="text-sm text-muted min-w-11 text-right"
+    >
       {{ formattedTimeout }}
     </span>
 

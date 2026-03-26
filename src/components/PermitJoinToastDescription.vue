@@ -28,7 +28,9 @@ const targetLabel = computed(() => {
     return t('permitJoin.allRouters')
   }
 
-  const device = devicesStore.devicesFor(props.connectionId).find((entry) => entry.friendly_name === target)
+  const device = devicesStore
+    .devicesFor(props.connectionId)
+    .find((entry) => entry.friendly_name === target)
   return device?.friendly_name || target
 })
 
@@ -37,7 +39,10 @@ const progress = computed(() => {
     return 0
   }
 
-  return Math.max(0, Math.min(100, (bridgeStore.permitJoinTimeout(props.connectionId) / props.initialTimeout) * 100))
+  return Math.max(
+    0,
+    Math.min(100, (bridgeStore.permitJoinTimeout(props.connectionId) / props.initialTimeout) * 100),
+  )
 })
 </script>
 

@@ -20,8 +20,9 @@ const logsStore = useLogsStore()
 const logDetailsStore = useLogDetailsStore()
 const { t } = useI18n()
 const errorLogs = computed(() =>
-  logsStore.logsFor(props.connectionId)
-    .filter(entry => entry.level === 'error')
+  logsStore
+    .logsFor(props.connectionId)
+    .filter((entry) => entry.level === 'error')
     .slice(0, 20),
 )
 const hasErrors = computed(() => errorLogs.value.length > 0)
@@ -63,7 +64,7 @@ const statusLabel = computed(() => {
 })
 
 async function openLogDetails(id: string) {
-  const entry = errorLogs.value.find(candidate => candidate.id === id)
+  const entry = errorLogs.value.find((candidate) => candidate.id === id)
 
   if (!entry) {
     return
@@ -87,19 +88,9 @@ function openLogsPage() {
 <template>
   <div class="flex items-center gap-3">
     <PermitJoinToggle :connection-id="connectionId" />
-    <UButton
-      :color="statusColor"
-      variant="ghost"
-      :icon="statusIcon"
-      :label="statusLabel"
-    />
+    <UButton :color="statusColor" variant="ghost" :icon="statusIcon" :label="statusLabel" />
 
-    <UChip
-      :show="hasErrors"
-      inset
-      color="error"
-      size="md"
-    >
+    <UChip :show="hasErrors" inset color="error" size="md">
       <UButton
         :color="hasErrors ? 'error' : 'neutral'"
         variant="ghost"
@@ -127,7 +118,12 @@ function openLogsPage() {
           </span>
         </div>
 
-        <UButton color="neutral" variant="ghost" :label="t('app.openLogsPage')" @click="openLogsPage" />
+        <UButton
+          color="neutral"
+          variant="ghost"
+          :label="t('app.openLogsPage')"
+          @click="openLogsPage"
+        />
       </div>
 
       <div v-if="errorLogs.length" class="mt-4 space-y-3">

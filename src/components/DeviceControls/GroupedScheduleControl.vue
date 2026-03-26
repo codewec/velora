@@ -10,7 +10,6 @@ import {
   scheduleEditorDaysFromState,
   serializeScheduleValue,
   type DaySchedule,
-  type ScheduleEntry,
 } from '@/utils/schedule'
 
 const props = defineProps<{
@@ -63,9 +62,9 @@ function segmentTone(value: number | null) {
 }
 
 function openEditor() {
-  draftDays.value = scheduleEditorDaysFromState(props.state).map(day => ({
+  draftDays.value = scheduleEditorDaysFromState(props.state).map((day) => ({
     ...day,
-    entries: day.entries.map(entry => ({ ...entry })),
+    entries: day.entries.map((entry) => ({ ...entry })),
   }))
   isEditorOpen.value = true
 }
@@ -107,7 +106,7 @@ function updateEntryTemperature(dayIndex: number, entryIndex: number, value: str
 
 async function saveSchedule() {
   const payload = Object.fromEntries(
-    draftDays.value.map(day => [day.key, serializeScheduleValue(day.entries)]),
+    draftDays.value.map((day) => [day.key, serializeScheduleValue(day.entries)]),
   ) as DeviceState
 
   isSaving.value = true
@@ -138,15 +137,25 @@ async function saveSchedule() {
 </script>
 
 <template>
-  <UCard class="border-slate-200/80 bg-white/80 dark:border-white/10 dark:bg-slate-950/50" :ui="{ body: 'p-4' }">
+  <UCard
+    class="border-slate-200/80 bg-white/80 dark:border-white/10 dark:bg-slate-950/50"
+    :ui="{ body: 'p-4' }"
+  >
     <div class="space-y-4">
       <div class="flex items-start justify-between gap-4">
         <div class="min-w-0 flex-1">
           <div class="flex items-center gap-2">
-            <UIcon name="i-lucide-calendar-range" class="text-base text-slate-500 dark:text-slate-400" />
-            <p class="text-sm font-semibold text-slate-950 dark:text-white">{{ t('schedule.title') }}</p>
+            <UIcon
+              name="i-lucide-calendar-range"
+              class="text-base text-slate-500 dark:text-slate-400"
+            />
+            <p class="text-sm font-semibold text-slate-950 dark:text-white">
+              {{ t('schedule.title') }}
+            </p>
           </div>
-          <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('schedule.description') }}</p>
+          <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            {{ t('schedule.description') }}
+          </p>
         </div>
 
         <UButton
@@ -162,7 +171,9 @@ async function saveSchedule() {
         <div class="hidden grid-cols-[7rem_minmax(0,1fr)] gap-3 px-1 md:grid">
           <div />
           <div class="grid grid-cols-5 text-[11px] font-medium text-slate-500 dark:text-slate-400">
-            <span v-for="marker in TIMELINE_MARKERS" :key="marker" class="text-left last:text-right">{{ marker }}:00</span>
+            <span v-for="marker in TIMELINE_MARKERS" :key="marker" class="text-left last:text-right"
+              >{{ marker }}:00</span
+            >
           </div>
         </div>
 
@@ -173,8 +184,12 @@ async function saveSchedule() {
         >
           <div class="flex items-center justify-between gap-3">
             <div>
-              <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ dayLabel(day.day) }}</p>
-              <p class="text-xs text-slate-500 dark:text-slate-400">{{ day.entries.length }} {{ t('schedule.slots') }}</p>
+              <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                {{ dayLabel(day.day) }}
+              </p>
+              <p class="text-xs text-slate-500 dark:text-slate-400">
+                {{ day.entries.length }} {{ t('schedule.slots') }}
+              </p>
             </div>
             <UBadge color="neutral" variant="soft">{{ day.entries.length }}</UBadge>
           </div>
@@ -218,7 +233,10 @@ async function saveSchedule() {
               </div>
             </div>
 
-            <div v-else class="rounded-xl border border-dashed border-slate-300/80 px-3 py-4 text-center text-xs text-slate-500 dark:border-white/10 dark:text-slate-400">
+            <div
+              v-else
+              class="rounded-xl border border-dashed border-slate-300/80 px-3 py-4 text-center text-xs text-slate-500 dark:border-white/10 dark:text-slate-400"
+            >
               {{ t('schedule.noSlots') }}
             </div>
 
@@ -238,7 +256,12 @@ async function saveSchedule() {
       </div>
     </div>
 
-    <UModal v-model:open="isEditorOpen" :title="t('schedule.title')" :description="t('schedule.editorDescription')" :ui="{ content: 'sm:max-w-5xl' }">
+    <UModal
+      v-model:open="isEditorOpen"
+      :title="t('schedule.title')"
+      :description="t('schedule.editorDescription')"
+      :ui="{ content: 'sm:max-w-5xl' }"
+    >
       <template #body>
         <div class="space-y-5">
           <div
@@ -247,7 +270,9 @@ async function saveSchedule() {
             class="rounded-2xl bg-slate-100/80 p-4 dark:bg-slate-900/60"
           >
             <div class="mb-4 flex items-center justify-between gap-3">
-              <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ dayLabel(day.day) }}</p>
+              <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                {{ dayLabel(day.day) }}
+              </p>
               <UButton
                 icon="i-lucide-plus"
                 color="neutral"
@@ -268,7 +293,10 @@ async function saveSchedule() {
                   <UInput
                     :model-value="entry.time"
                     type="time"
-                    @update:model-value="(value: string | number) => updateEntryTime(dayIndex, entryIndex, String(value ?? ''))"
+                    @update:model-value="
+                      (value: string | number) =>
+                        updateEntryTime(dayIndex, entryIndex, String(value ?? ''))
+                    "
                   />
                 </UFormField>
 
@@ -277,7 +305,10 @@ async function saveSchedule() {
                     :model-value="entry.temperature == null ? '' : String(entry.temperature)"
                     type="number"
                     step="0.5"
-                    @update:model-value="(value: string | number) => updateEntryTemperature(dayIndex, entryIndex, value)"
+                    @update:model-value="
+                      (value: string | number) =>
+                        updateEntryTemperature(dayIndex, entryIndex, value)
+                    "
                   />
                 </UFormField>
 
@@ -292,7 +323,10 @@ async function saveSchedule() {
               </div>
             </div>
 
-            <div v-else class="rounded-xl border border-dashed border-slate-300/80 px-3 py-4 text-center text-xs text-slate-500 dark:border-white/10 dark:text-slate-400">
+            <div
+              v-else
+              class="rounded-xl border border-dashed border-slate-300/80 px-3 py-4 text-center text-xs text-slate-500 dark:border-white/10 dark:text-slate-400"
+            >
               {{ t('schedule.noSlots') }}
             </div>
           </div>

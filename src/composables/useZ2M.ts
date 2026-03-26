@@ -126,7 +126,12 @@ function createClient(connectionId: string, connection: Z2MConnectionConfig): Z2
     ].slice(0, 200)
   }
 
-  function pushStoreLog(level: 'info' | 'warning' | 'error' | 'debug', kind: 'transport' | 'tx' | 'rx', summary: string, raw: string) {
+  function pushStoreLog(
+    level: 'info' | 'warning' | 'error' | 'debug',
+    kind: 'transport' | 'tx' | 'rx',
+    summary: string,
+    raw: string,
+  ) {
     logsStore.addLog(connectionId, {
       level,
       kind,
@@ -204,11 +209,18 @@ function createClient(connectionId: string, connection: Z2MConnectionConfig): Z2
         messagesReceived: metrics.value.messagesReceived + 1,
         bytesReceived: metrics.value.bytesReceived + raw.length,
         lastMessageTs: Date.now(),
-        messagesBridge: metrics.value.messagesBridge + (message.topic.startsWith('bridge/') ? 1 : 0),
-        messagesDevice: metrics.value.messagesDevice + (message.topic.startsWith('bridge/') ? 0 : 1),
+        messagesBridge:
+          metrics.value.messagesBridge + (message.topic.startsWith('bridge/') ? 1 : 0),
+        messagesDevice:
+          metrics.value.messagesDevice + (message.topic.startsWith('bridge/') ? 0 : 1),
       }
 
-      pushStoreLog('debug', 'rx', i18n.global.t('logsPage.received', { topic: message.topic }), JSON.stringify(message, null, 2))
+      pushStoreLog(
+        'debug',
+        'rx',
+        i18n.global.t('logsPage.received', { topic: message.topic }),
+        JSON.stringify(message, null, 2),
+      )
 
       for (const handler of handlers) {
         handler(message)
@@ -227,7 +239,10 @@ function createClient(connectionId: string, connection: Z2MConnectionConfig): Z2
       pushLog(
         event.code === 1000 ? 'info' : 'warning',
         event.reason
-          ? i18n.global.t('logsPage.connectionClosedWithReason', { code: event.code, reason: event.reason })
+          ? i18n.global.t('logsPage.connectionClosedWithReason', {
+              code: event.code,
+              reason: event.reason,
+            })
           : i18n.global.t('logsPage.connectionClosed', { code: event.code }),
       )
       pushStoreLog(
@@ -261,7 +276,12 @@ function createClient(connectionId: string, connection: Z2MConnectionConfig): Z2
   function send(topic: string, payload: unknown) {
     if (!socket || socket.readyState !== WebSocket.OPEN) {
       pushLog('warning', i18n.global.t('logsPage.sendSkippedClosed', { topic }))
-      pushStoreLog('warning', 'tx', i18n.global.t('logsPage.sendSkipped', { topic }), JSON.stringify({ topic, payload }, null, 2))
+      pushStoreLog(
+        'warning',
+        'tx',
+        i18n.global.t('logsPage.sendSkipped', { topic }),
+        JSON.stringify({ topic, payload }, null, 2),
+      )
       return false
     }
 
@@ -273,7 +293,12 @@ function createClient(connectionId: string, connection: Z2MConnectionConfig): Z2
       bytesSent: metrics.value.bytesSent + raw.length,
     }
     pushLog('info', i18n.global.t('logsPage.sent', { topic }))
-    pushStoreLog('info', 'tx', i18n.global.t('logsPage.sent', { topic }), JSON.stringify({ topic, payload }, null, 2))
+    pushStoreLog(
+      'info',
+      'tx',
+      i18n.global.t('logsPage.sent', { topic }),
+      JSON.stringify({ topic, payload }, null, 2),
+    )
     return true
   }
 

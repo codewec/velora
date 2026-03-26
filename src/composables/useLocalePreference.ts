@@ -17,7 +17,7 @@ export function useLocalePreference() {
   return {
     locale: computed({
       get: () => locale.value as AppLocale,
-      set: value => {
+      set: (value) => {
         locale.value = value
       },
     }),

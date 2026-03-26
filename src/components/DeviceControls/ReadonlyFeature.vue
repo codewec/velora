@@ -22,22 +22,24 @@ const historyListRef = ref<HTMLElement | null>(null)
 
 const formattedValue = computed(() => formatFeatureValue(props.expose, props.stateValue))
 
-const historyEntries = computed(() => indicatorHistoryStore.featureHistory(
-  props.connectionId,
-  props.deviceName,
-  featureKey(props.expose),
-))
+const historyEntries = computed(() =>
+  indicatorHistoryStore.featureHistory(
+    props.connectionId,
+    props.deviceName,
+    featureKey(props.expose),
+  ),
+)
 
 const valueTrail = computed(() =>
   buildValueTrail(
     formattedValue.value,
-    historyEntries.value.filter(entry => entry.value !== props.stateValue),
+    historyEntries.value.filter((entry) => entry.value !== props.stateValue),
     props.expose,
   ),
 )
 
 const hasPreviousValues = computed(() =>
-  historyEntries.value.some(entry => entry.value !== props.stateValue),
+  historyEntries.value.some((entry) => entry.value !== props.stateValue),
 )
 
 const historyRows = computed(() => {
@@ -47,12 +49,14 @@ const historyRows = computed(() => {
   // the modal always reflects the current state at the top and live updates
   // simply prepend a new row without any extra synchronization logic.
   if (!entries.length || entries[0]?.value !== props.stateValue) {
-    return [{
-      id: 'current',
-      value: props.stateValue,
-      changedAt: Date.now(),
-      current: true,
-    }]
+    return [
+      {
+        id: 'current',
+        value: props.stateValue,
+        changedAt: Date.now(),
+        current: true,
+      },
+    ]
   }
 
   return entries.map((entry, index) => ({
@@ -79,12 +83,18 @@ watch(
 <template>
   <UCard
     class="border-slate-200/80 bg-white/80 dark:border-white/10 dark:bg-slate-950/50"
-    :class="hasPreviousValues ? 'cursor-pointer transition-colors hover:border-primary/40 hover:bg-white/90 dark:hover:bg-slate-950/60' : ''"
+    :class="
+      hasPreviousValues
+        ? 'cursor-pointer transition-colors hover:border-primary/40 hover:bg-white/90 dark:hover:bg-slate-950/60'
+        : ''
+    "
     :ui="{ body: 'p-4' }"
     @click="hasPreviousValues ? (isHistoryModalOpen = true) : undefined"
   >
     <div class="relative overflow-hidden">
-      <div class="pointer-events-none absolute inset-0 flex items-center justify-end overflow-hidden">
+      <div
+        class="pointer-events-none absolute inset-0 flex items-center justify-end overflow-hidden"
+      >
         <!--
           The trail uses a single mask over the whole row instead of per-item
           opacity math. That makes the fade depend on the rendered width of the
@@ -93,7 +103,22 @@ watch(
         -->
         <div
           class="flex min-w-0 items-center justify-end gap-3 pl-14 pr-1"
-          style="mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,.18) 14%, rgba(0,0,0,.72) 34%, rgba(0,0,0,1) 58%); -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,.18) 14%, rgba(0,0,0,.72) 34%, rgba(0,0,0,1) 58%);"
+          style="
+            mask-image: linear-gradient(
+              to right,
+              transparent 0%,
+              rgba(0, 0, 0, 0.18) 14%,
+              rgba(0, 0, 0, 0.72) 34%,
+              rgba(0, 0, 0, 1) 58%
+            );
+            -webkit-mask-image: linear-gradient(
+              to right,
+              transparent 0%,
+              rgba(0, 0, 0, 0.18) 14%,
+              rgba(0, 0, 0, 0.72) 34%,
+              rgba(0, 0, 0, 1) 58%
+            );
+          "
         >
           <span
             v-for="entry in valueTrail"
@@ -121,10 +146,7 @@ watch(
     :ui="{ content: 'sm:max-w-2xl' }"
   >
     <template #body>
-      <div
-        ref="historyListRef"
-        class="space-y-3 overflow-y-auto sm:h-[32rem]"
-      >
+      <div ref="historyListRef" class="space-y-3 overflow-y-auto sm:h-[32rem]">
         <div
           v-for="row in historyRows"
           :key="row.id"

@@ -36,7 +36,7 @@ const router = createRouter({
     },
     {
       path: '/connections/:connectionId/devices/:id',
-      redirect: to => `/connections/${to.params.connectionId}/devices/${to.params.id}/exposes`,
+      redirect: (to) => `/connections/${to.params.connectionId}/devices/${to.params.id}/exposes`,
     },
     {
       path: '/connections/:connectionId/devices/:id/exposes',

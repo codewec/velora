@@ -1,0 +1,31 @@
+#!/bin/sh
+set -eu
+
+# Git hooks often run with a minimal PATH, especially from IDEs. Extend it with
+# common pnpm/node locations so the same hook works from terminal and GUI
+# commits.
+export PATH="$HOME/.local/share/pnpm:$HOME/.nvm/versions/node/v24.13.0/bin:/usr/local/bin:/opt/homebrew/bin:$PATH"
+
+if command -v pnpm >/dev/null 2>&1; then
+  PNPM_CMD="pnpm"
+elif [ -x "$HOME/.local/share/pnpm/pnpm" ]; then
+  PNPM_CMD="$HOME/.local/share/pnpm/pnpm"
+elif command -v corepack >/dev/null 2>&1; then
+  PNPM_CMD="corepack pnpm"
+else
+  echo "[pre-commit] pnpm is not available in PATH"
+  exit 1
+fi
+
+echo "[pre-commit] Formatting"
+sh -c "$PNPM_CMD format"
+
+echo "[pre-commit] Linting"
+sh -c "$PNPM_CMD lint"
+
+echo "[pre-commit] Type checking"
+sh -c "$PNPM_CMD type-check"
+
+# Formatter and linters may update files. Re-stage everything so the commit
+# includes those fixes instead of failing on the next attempt.
+git add -A

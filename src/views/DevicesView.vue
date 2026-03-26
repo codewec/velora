@@ -38,7 +38,9 @@ const cards = computed(() =>
         <template #left>
           <div class="flex items-center gap-3">
             <UBadge color="neutral" variant="subtle">zigbee2mqtt</UBadge>
-            <span class="text-sm text-muted">{{ t('devicesPage.count', { count: cards.length }) }}</span>
+            <span class="text-sm text-muted">{{
+              t('devicesPage.count', { count: cards.length })
+            }}</span>
           </div>
         </template>
       </UDashboardToolbar>
@@ -46,10 +48,7 @@ const cards = computed(() =>
 
     <template #body>
       <div class="flex flex-col gap-4 sm:gap-6 lg:gap-8">
-        <div
-          v-if="cards.length"
-          class="grid gap-4 md:grid-cols-2 xl:grid-cols-3"
-        >
+        <div v-if="cards.length" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           <DeviceCard
             v-for="entry in cards"
             :key="entry.device.ieee_address"
@@ -59,9 +58,15 @@ const cards = computed(() =>
           />
         </div>
 
-        <UCard v-else class="border-slate-200/80 bg-white/80 dark:border-white/10 dark:bg-white/5" :ui="{ body: 'p-8' }">
+        <UCard
+          v-else
+          class="border-slate-200/80 bg-white/80 dark:border-white/10 dark:bg-white/5"
+          :ui="{ body: 'p-8' }"
+        >
           <div class="space-y-2 text-center">
-            <p class="text-lg font-semibold text-slate-950 dark:text-white">{{ t('devicesPage.noDevices') }}</p>
+            <p class="text-lg font-semibold text-slate-950 dark:text-white">
+              {{ t('devicesPage.noDevices') }}
+            </p>
             <p class="text-sm text-slate-500 dark:text-slate-400">
               {{ t('devicesPage.noDevicesDescription') }}
             </p>

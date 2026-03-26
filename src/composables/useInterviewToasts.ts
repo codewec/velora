@@ -45,14 +45,16 @@ export function useInterviewToasts() {
       color: 'neutral' | 'error'
       variant: 'outline'
       onClick: () => void
-    }> = [{
-      label: t('interview.openDevice'),
-      color: 'neutral' as const,
-      variant: 'outline' as const,
-      onClick: () => {
-        router.push(`/connections/${connectionId}/devices/${session.ieeeAddress}`)
+    }> = [
+      {
+        label: t('interview.openDevice'),
+        color: 'neutral' as const,
+        variant: 'outline' as const,
+        onClick: () => {
+          router.push(`/connections/${connectionId}/devices/${session.ieeeAddress}`)
+        },
       },
-    }]
+    ]
 
     if (finished && bridgeStore.permitJoin(connectionId)) {
       actions.push({
@@ -60,7 +62,12 @@ export function useInterviewToasts() {
         color: 'error' as const,
         variant: 'outline' as const,
         onClick: () => {
-          bridgeStore.setPermitJoin(connectionId, false, 0, bridgeStore.permitJoinTarget(connectionId))
+          bridgeStore.setPermitJoin(
+            connectionId,
+            false,
+            0,
+            bridgeStore.permitJoinTarget(connectionId),
+          )
         },
       })
     }

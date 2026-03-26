@@ -46,9 +46,7 @@ function handleToggle(expose: BinaryExpose, value: boolean | undefined) {
   const key = featureKey(expose)
   optimisticByKey.value = { ...optimisticByKey.value, [key]: Boolean(value) }
   pendingByKey.value = { ...pendingByKey.value, [key]: true }
-  const payload = value
-    ? (expose.value_on ?? 'ON')
-    : (expose.value_off ?? 'OFF')
+  const payload = value ? (expose.value_on ?? 'ON') : (expose.value_off ?? 'OFF')
   const topic = `${devicesStore.deviceCommandTopic(props.connectionId, props.deviceName)}/set`
 
   const sent = useZ2M(props.connectionId).send(topic, {
@@ -64,15 +62,18 @@ function handleToggle(expose: BinaryExpose, value: boolean | undefined) {
 
   devicesStore.markDeviceTx(props.connectionId, props.deviceName)
   clearPendingTimer(key)
-  pendingTimers.set(key, setTimeout(() => {
-    pendingByKey.value = { ...pendingByKey.value, [key]: false }
-    optimisticByKey.value = { ...optimisticByKey.value, [key]: actualChecked(expose) }
-    pendingTimers.delete(key)
-  }, CONTROL_PENDING_TIMEOUT_MS))
+  pendingTimers.set(
+    key,
+    setTimeout(() => {
+      pendingByKey.value = { ...pendingByKey.value, [key]: false }
+      optimisticByKey.value = { ...optimisticByKey.value, [key]: actualChecked(expose) }
+      pendingTimers.delete(key)
+    }, CONTROL_PENDING_TIMEOUT_MS),
+  )
 }
 
 watch(
-  () => sortedExposes.value.map(expose => props.state[featureKey(expose)]),
+  () => sortedExposes.value.map((expose) => props.state[featureKey(expose)]),
   () => {
     for (const expose of sortedExposes.value) {
       const key = featureKey(expose)
@@ -96,7 +97,10 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <UCard class="border-slate-200/80 bg-white/80 dark:border-white/10 dark:bg-slate-950/50" :ui="{ body: 'p-4' }">
+  <UCard
+    class="border-slate-200/80 bg-white/80 dark:border-white/10 dark:bg-slate-950/50"
+    :ui="{ body: 'p-4' }"
+  >
     <div class="space-y-4">
       <FeatureHeader v-if="primaryExpose" :expose="primaryExpose" hide-endpoint />
 

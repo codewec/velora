@@ -54,12 +54,15 @@ watch(
         : undefined
     "
     :ui="{ content: 'sm:max-w-4xl' }"
-    @update:open="(open: boolean) => open ? null : logDetailsStore.close()"
+    @update:open="(open: boolean) => (open ? null : logDetailsStore.close())"
   >
     <template #body>
       <div v-if="selected" class="space-y-4">
         <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <div v-if="selected.lineNumber != null" class="rounded-2xl bg-slate-100/80 p-3 dark:bg-slate-900/60">
+          <div
+            v-if="selected.lineNumber != null"
+            class="rounded-2xl bg-slate-100/80 p-3 dark:bg-slate-900/60"
+          >
             <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
               {{ t('logsPage.line') }}
             </p>
@@ -158,11 +161,17 @@ watch(
         <div v-if="parsedTopicPayload" class="grid gap-3 sm:grid-cols-2">
           <div class="rounded-2xl bg-slate-100/80 p-3 dark:bg-slate-900/60">
             <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Topic</p>
-            <p class="mt-1 break-all font-mono text-sm text-slate-900 dark:text-slate-100">{{ parsedTopicPayload.topic }}</p>
+            <p class="mt-1 break-all font-mono text-sm text-slate-900 dark:text-slate-100">
+              {{ parsedTopicPayload.topic }}
+            </p>
           </div>
           <div class="rounded-2xl bg-slate-100/80 p-3 dark:bg-slate-900/60">
-            <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Payload</p>
-            <p class="mt-1 break-all font-mono text-sm text-slate-900 dark:text-slate-100">{{ parsedTopicPayload.payload }}</p>
+            <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              Payload
+            </p>
+            <p class="mt-1 break-all font-mono text-sm text-slate-900 dark:text-slate-100">
+              {{ parsedTopicPayload.payload }}
+            </p>
           </div>
         </div>
       </div>

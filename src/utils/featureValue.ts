@@ -41,10 +41,10 @@ export function formatFeatureValue(expose: Expose, value: DeviceStateValue | und
 
 export function buildValueTrail(
   currentValue: string,
-  historyValues: Array<{ changedAt: number, value: DeviceStateValue }>,
+  historyValues: Array<{ changedAt: number; value: DeviceStateValue }>,
   expose: Expose,
 ) {
-  const collected: Array<{ changedAt: number, text: string }> = []
+  const collected: Array<{ changedAt: number; text: string }> = []
   let totalLength = currentValue.length
 
   // We cap the visual trail by the final rendered text length instead of

@@ -46,13 +46,17 @@ if (typeof window !== 'undefined') {
   })
 }
 
-watch(preference, (value) => {
-  if (typeof window !== 'undefined') {
-    window.localStorage.setItem(STORAGE_KEY, value)
-  }
+watch(
+  preference,
+  (value) => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(STORAGE_KEY, value)
+    }
 
-  applyMode(value === 'system' ? systemMode() : value)
-}, { immediate: true })
+    applyMode(value === 'system' ? systemMode() : value)
+  },
+  { immediate: true },
+)
 
 export function useColorMode() {
   const state = computed<ColorModeValue>({

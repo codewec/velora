@@ -17,7 +17,10 @@ defineProps<{
     <div class="flex items-center gap-2">
       <UIcon :name="featureIcon(expose)" class="text-base text-slate-500 dark:text-slate-400" />
       <p class="text-sm font-semibold text-slate-950 dark:text-white">{{ featureTitle(expose) }}</p>
-      <span v-if="!hideEndpoint && featureEndpoint(expose)" class="text-xs text-slate-400 dark:text-slate-500">
+      <span
+        v-if="!hideEndpoint && featureEndpoint(expose)"
+        class="text-xs text-slate-400 dark:text-slate-500"
+      >
         ({{ t('devicePage.endpoint', { endpoint: featureEndpoint(expose) }) }})
       </span>
     </div>

@@ -24,10 +24,14 @@ const { enabled: smartGroupingEnabled } = useSmartGroupingPreference()
 
 const device = computed(() => devicesStore.deviceById(props.connectionId, props.id))
 const state = computed(() =>
-  device.value ? devicesStore.deviceStatesFor(props.connectionId)[device.value.friendly_name] ?? {} : {},
+  device.value
+    ? (devicesStore.deviceStatesFor(props.connectionId)[device.value.friendly_name] ?? {})
+    : {},
 )
 
-const title = computed(() => (device.value ? deviceDisplayTitle(device.value) : t('devicePage.notFound')))
+const title = computed(() =>
+  device.value ? deviceDisplayTitle(device.value) : t('devicePage.notFound'),
+)
 const subtitle = computed(() => (device.value ? deviceDisplaySubtitle(device.value) : props.id))
 
 const tabs = computed<NavigationMenuItem[]>(() => [
@@ -81,12 +85,16 @@ const tabs = computed<NavigationMenuItem[]>(() => [
         <template #right>
           <div class="flex items-center gap-6">
             <div v-if="showSmartGroupingToggle" class="flex items-center gap-3">
-              <span class="text-sm text-slate-500 dark:text-slate-400">{{ t('devicePage.smartGrouping') }}</span>
+              <span class="text-sm text-slate-500 dark:text-slate-400">{{
+                t('devicePage.smartGrouping')
+              }}</span>
               <USwitch v-model="smartGroupingEnabled" />
             </div>
 
             <div v-if="showHistoryToggle" class="flex items-center gap-3">
-              <span class="text-sm text-slate-500 dark:text-slate-400">{{ t('devicePage.recordHistory') }}</span>
+              <span class="text-sm text-slate-500 dark:text-slate-400">{{
+                t('devicePage.recordHistory')
+              }}</span>
               <USwitch v-model="historyEnabled" />
             </div>
           </div>
@@ -95,11 +103,7 @@ const tabs = computed<NavigationMenuItem[]>(() => [
     </template>
 
     <template #body>
-      <slot
-        v-if="device"
-        :device="device"
-        :state="state"
-      />
+      <slot v-if="device" :device="device" :state="state" />
 
       <UAlert
         v-else

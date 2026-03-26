@@ -20,15 +20,13 @@ export function usePermitJoinToasts() {
       ...Object.keys(bridgeStore.permitJoinTargetByConnection),
     ])
 
-    return [...connectionIds]
-      .sort()
-      .map((connectionId) => ({
-        connectionId,
-        enabled: bridgeStore.permitJoin(connectionId),
-        timeout: bridgeStore.permitJoinTimeout(connectionId),
-        target: bridgeStore.permitJoinTarget(connectionId),
-        deviceNames: devicesStore.devicesFor(connectionId).map(device => device.friendly_name),
-      }))
+    return [...connectionIds].sort().map((connectionId) => ({
+      connectionId,
+      enabled: bridgeStore.permitJoin(connectionId),
+      timeout: bridgeStore.permitJoinTimeout(connectionId),
+      target: bridgeStore.permitJoinTarget(connectionId),
+      deviceNames: devicesStore.devicesFor(connectionId).map((device) => device.friendly_name),
+    }))
   })
 
   function syncToast(connectionId: string) {
@@ -59,15 +57,22 @@ export function usePermitJoinToasts() {
       duration: timeout * 1000,
       progress: false,
       close: false,
-      actions: [{
-        label: t('permitJoin.stop'),
-        color: 'error' as const,
-        variant: 'outline' as const,
-        onClick: () => {
-          bridgeStore.setPermitJoin(connectionId, false, 0, bridgeStore.permitJoinTarget(connectionId))
-          toast.remove(id)
+      actions: [
+        {
+          label: t('permitJoin.stop'),
+          color: 'error' as const,
+          variant: 'outline' as const,
+          onClick: () => {
+            bridgeStore.setPermitJoin(
+              connectionId,
+              false,
+              0,
+              bridgeStore.permitJoinTarget(connectionId),
+            )
+            toast.remove(id)
+          },
         },
-      }],
+      ],
     }
 
     if (!activeToastIds.has(id)) {
