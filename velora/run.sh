@@ -76,6 +76,7 @@ events {
 http {
     access_log              off;
     client_max_body_size    4G;
+    include                 /etc/nginx/mime.types;
     default_type            application/octet-stream;
     keepalive_timeout       65;
     sendfile                off;
