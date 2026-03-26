@@ -11,6 +11,7 @@ init: false
 startup: application
 arch:
   - amd64
+  - aarch64
 options:
   z2m_targets_json: ""
 schema:
