@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import BinaryControl from '@/components/DeviceControls/BinaryControl.vue'
 import EnumControl from '@/components/DeviceControls/EnumControl.vue'
@@ -18,6 +19,7 @@ const props = defineProps<{
   id: string
 }>()
 
+const { t } = useI18n()
 const { enabled: smartGroupingEnabled } = useSmartGroupingPreference()
 
 function flattenExposes(exposes: Expose[] | undefined): Expose[] {
@@ -181,9 +183,9 @@ function groupedControlComponent(group: Expose[]) {
       <div class="grid gap-6 xl:grid-cols-2">
         <div class="space-y-4">
           <div class="flex items-center justify-between">
-            <p class="text-sm uppercase tracking-[0.25em] text-slate-500">Indicators</p>
+            <p class="text-sm uppercase tracking-[0.25em] text-slate-500">{{ t('devicePage.indicators') }}</p>
             <p class="text-sm text-slate-500 dark:text-slate-400">
-              {{ readableExposes(device.definition?.exposes).length + inferredReadableExposes(device.definition?.exposes, state).length }} readable exposes
+              {{ t('devicePage.readableExposes', { count: readableExposes(device.definition?.exposes).length + inferredReadableExposes(device.definition?.exposes, state).length }) }}
             </p>
           </div>
 
@@ -214,16 +216,16 @@ function groupedControlComponent(group: Expose[]) {
             v-else
             color="neutral"
             variant="subtle"
-            title="No readable indicators"
-            description="This device does not currently expose any read-only indicators."
+            :title="t('devicePage.noReadableIndicators')"
+            :description="t('devicePage.noReadableIndicatorsDescription')"
           />
         </div>
 
         <div class="space-y-4">
           <div class="flex items-center justify-between">
-            <p class="text-sm uppercase tracking-[0.25em] text-slate-500">Controls</p>
+            <p class="text-sm uppercase tracking-[0.25em] text-slate-500">{{ t('devicePage.controls') }}</p>
             <p class="text-sm text-slate-500 dark:text-slate-400">
-              {{ writableExposes(device.definition?.exposes).length }} writable exposes
+              {{ t('devicePage.writableExposes', { count: writableExposes(device.definition?.exposes).length }) }}
             </p>
           </div>
 
@@ -260,7 +262,7 @@ function groupedControlComponent(group: Expose[]) {
                 color="neutral"
                 variant="subtle"
                 :title="expose.label || expose.name || expose.property || expose.type"
-                description="Expose type is not supported in this MVP."
+                :description="t('devicePage.unsupportedExposeDescription')"
               />
             </template>
           </div>
@@ -269,8 +271,8 @@ function groupedControlComponent(group: Expose[]) {
             v-else
             color="neutral"
             variant="subtle"
-            title="No writable exposes"
-            description="This device does not currently expose binary, numeric or enum controls."
+            :title="t('devicePage.noWritableExposes')"
+            :description="t('devicePage.noWritableExposesDescription')"
           />
         </div>
       </div>

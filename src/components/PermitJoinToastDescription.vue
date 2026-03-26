@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useBridgeStore } from '@/stores/bridge'
 import { useDevicesStore } from '@/stores/devices'
@@ -11,6 +12,7 @@ const props = defineProps<{
 
 const bridgeStore = useBridgeStore()
 const devicesStore = useDevicesStore()
+const { t } = useI18n()
 
 const formattedTimeout = computed(() => {
   const seconds = bridgeStore.permitJoinTimeout(props.connectionId)
@@ -23,7 +25,7 @@ const targetLabel = computed(() => {
   const target = bridgeStore.permitJoinTarget(props.connectionId)
 
   if (target === 'all') {
-    return 'All routers'
+    return t('permitJoin.allRouters')
   }
 
   const device = devicesStore.devicesFor(props.connectionId).find((entry) => entry.friendly_name === target)
@@ -41,7 +43,7 @@ const progress = computed(() => {
 
 <template>
   <div class="space-y-2">
-    <div>Via {{ targetLabel }} · {{ formattedTimeout }}</div>
+    <div>{{ t('permitJoin.via', { target: targetLabel, timeout: formattedTimeout }) }}</div>
 
     <div class="h-1.5 overflow-hidden rounded-full bg-accented">
       <div

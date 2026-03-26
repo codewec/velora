@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { NavigationMenuItem } from '@nuxt/ui'
+import { useI18n } from 'vue-i18n'
 
 import ConnectionNavbarActions from '@/components/ConnectionNavbarActions.vue'
 import { useIndicatorHistoryPreference } from '@/composables/useIndicatorHistoryPreference'
@@ -17,6 +18,7 @@ const props = defineProps<{
 }>()
 
 const devicesStore = useDevicesStore()
+const { t } = useI18n()
 const { enabled: historyEnabled } = useIndicatorHistoryPreference()
 const { enabled: smartGroupingEnabled } = useSmartGroupingPreference()
 
@@ -25,22 +27,22 @@ const state = computed(() =>
   device.value ? devicesStore.deviceStatesFor(props.connectionId)[device.value.friendly_name] ?? {} : {},
 )
 
-const title = computed(() => (device.value ? deviceDisplayTitle(device.value) : 'Device not found'))
+const title = computed(() => (device.value ? deviceDisplayTitle(device.value) : t('devicePage.notFound')))
 const subtitle = computed(() => (device.value ? deviceDisplaySubtitle(device.value) : props.id))
 
 const tabs = computed<NavigationMenuItem[]>(() => [
   {
-    label: 'Exposes',
+    label: t('devicePage.exposes'),
     to: `/connections/${props.connectionId}/devices/${props.id}/exposes`,
     active: props.activeTab === 'exposes',
   },
   {
-    label: 'Info',
+    label: t('devicePage.info'),
     to: `/connections/${props.connectionId}/devices/${props.id}/info`,
     active: props.activeTab === 'info',
   },
   {
-    label: 'State',
+    label: t('devicePage.state'),
     to: `/connections/${props.connectionId}/devices/${props.id}/state`,
     active: props.activeTab === 'state',
   },
@@ -79,12 +81,12 @@ const tabs = computed<NavigationMenuItem[]>(() => [
         <template #right>
           <div class="flex items-center gap-6">
             <div v-if="showSmartGroupingToggle" class="flex items-center gap-3">
-              <span class="text-sm text-slate-500 dark:text-slate-400">Smart grouping</span>
+              <span class="text-sm text-slate-500 dark:text-slate-400">{{ t('devicePage.smartGrouping') }}</span>
               <USwitch v-model="smartGroupingEnabled" />
             </div>
 
             <div v-if="showHistoryToggle" class="flex items-center gap-3">
-              <span class="text-sm text-slate-500 dark:text-slate-400">Record history</span>
+              <span class="text-sm text-slate-500 dark:text-slate-400">{{ t('devicePage.recordHistory') }}</span>
               <USwitch v-model="historyEnabled" />
             </div>
           </div>
@@ -103,8 +105,8 @@ const tabs = computed<NavigationMenuItem[]>(() => [
         v-else
         color="error"
         variant="subtle"
-        title="Device not found"
-        description="The requested device is missing from the latest bridge inventory."
+        :title="t('devicePage.notFound')"
+        :description="t('devicePage.notFoundDescription')"
       />
     </template>
   </UDashboardPanel>

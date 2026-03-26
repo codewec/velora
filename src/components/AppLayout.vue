@@ -2,12 +2,14 @@
 import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import type { NavigationMenuItem } from '@nuxt/ui'
+import { useI18n } from 'vue-i18n'
 
 import { getDefaultConnectionId } from '@/config/z2mConnections'
 import InstanceMenu from '@/components/InstanceMenu.vue'
 import SettingsMenu from '@/components/SettingsMenu.vue'
 
 const route = useRoute()
+const { t } = useI18n()
 const open = ref(false)
 
 const connectionId = computed(() => String(route.params.connectionId || getDefaultConnectionId()))
@@ -16,7 +18,7 @@ const isDeviceRoute = computed(() =>
 )
 
 const links = computed<NavigationMenuItem[][]>(() => [[{
-  label: 'Devices',
+  label: t('app.devices'),
   icon: 'i-lucide-layout-grid',
   to: `/connections/${connectionId.value}`,
   exact: !isDeviceRoute.value && route.name !== 'logs' && route.name !== 'information',
@@ -24,7 +26,7 @@ const links = computed<NavigationMenuItem[][]>(() => [[{
     open.value = false
   },
 }, {
-  label: 'Information',
+  label: t('app.information'),
   icon: 'i-lucide-info',
   to: `/connections/${connectionId.value}/information`,
   exact: route.name === 'information',
@@ -32,7 +34,7 @@ const links = computed<NavigationMenuItem[][]>(() => [[{
     open.value = false
   },
 }, {
-  label: 'Events',
+  label: t('app.events'),
   icon: 'i-lucide-logs',
   to: `/connections/${connectionId.value}/logs`,
   exact: route.name === 'logs',

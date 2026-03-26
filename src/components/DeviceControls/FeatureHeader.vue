@@ -1,6 +1,10 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
 import type { Expose } from '@/types/z2m'
 import { featureDescription, featureEndpoint, featureIcon, featureTitle } from '@/utils/featureMeta'
+
+const { t } = useI18n()
 
 defineProps<{
   expose: Expose
@@ -14,7 +18,7 @@ defineProps<{
       <UIcon :name="featureIcon(expose)" class="text-base text-slate-500 dark:text-slate-400" />
       <p class="text-sm font-semibold text-slate-950 dark:text-white">{{ featureTitle(expose) }}</p>
       <span v-if="!hideEndpoint && featureEndpoint(expose)" class="text-xs text-slate-400 dark:text-slate-500">
-        (Endpoint: {{ featureEndpoint(expose) }})
+        ({{ t('devicePage.endpoint', { endpoint: featureEndpoint(expose) }) }})
       </span>
     </div>
     <p v-if="featureDescription(expose)" class="mt-1 text-xs text-slate-500 dark:text-slate-400">

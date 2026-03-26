@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import ConnectionNavbarActions from '@/components/ConnectionNavbarActions.vue'
 import DeviceCard from '@/components/DeviceCard.vue'
@@ -10,6 +11,7 @@ const props = defineProps<{
 }>()
 
 const devicesStore = useDevicesStore()
+const { t } = useI18n()
 
 const cards = computed(() =>
   devicesStore.peripheralDevices(props.connectionId).map((device) => ({
@@ -22,7 +24,7 @@ const cards = computed(() =>
 <template>
   <UDashboardPanel id="devices">
     <template #header>
-      <UDashboardNavbar title="Devices">
+      <UDashboardNavbar :title="t('devicesPage.title')">
         <template #leading>
           <UDashboardSidebarCollapse />
         </template>
@@ -36,7 +38,7 @@ const cards = computed(() =>
         <template #left>
           <div class="flex items-center gap-3">
             <UBadge color="neutral" variant="subtle">zigbee2mqtt</UBadge>
-            <span class="text-sm text-muted">{{ cards.length }} devices</span>
+            <span class="text-sm text-muted">{{ t('devicesPage.count', { count: cards.length }) }}</span>
           </div>
         </template>
       </UDashboardToolbar>
@@ -59,9 +61,9 @@ const cards = computed(() =>
 
         <UCard v-else class="border-slate-200/80 bg-white/80 dark:border-white/10 dark:bg-white/5" :ui="{ body: 'p-8' }">
           <div class="space-y-2 text-center">
-            <p class="text-lg font-semibold text-slate-950 dark:text-white">No devices received yet</p>
+            <p class="text-lg font-semibold text-slate-950 dark:text-white">{{ t('devicesPage.noDevices') }}</p>
             <p class="text-sm text-slate-500 dark:text-slate-400">
-              Confirm the selected connection config and wait for `bridge/devices`.
+              {{ t('devicesPage.noDevicesDescription') }}
             </p>
           </div>
         </UCard>

@@ -1,13 +1,17 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { DropdownMenuItem } from '@nuxt/ui'
+import { useI18n } from 'vue-i18n'
 import { useColorMode } from '@/composables/useColorMode'
+import { useLocalePreference } from '@/composables/useLocalePreference'
 
 defineProps<{
   collapsed?: boolean
 }>()
 
 const colorMode = useColorMode()
+const { t } = useI18n()
+const { locale } = useLocalePreference()
 const appConfig = useAppConfig()
 
 const colors = ['red', 'orange', 'amber', 'yellow', 'lime', 'green', 'emerald', 'teal', 'cyan', 'sky', 'blue', 'indigo', 'violet', 'purple', 'fuchsia', 'pink', 'rose']
@@ -39,21 +43,26 @@ const chipColors: Record<string, string> = {
 }
 
 const user = ref({
-  name: 'Settings',
+  name: '',
   avatar: {
     icon: 'i-lucide-settings-2',
   },
 })
 
+const localeOptions = [
+  { value: 'en', labelKey: 'app.english', icon: 'i-lucide-languages' },
+  { value: 'ru', labelKey: 'app.russian', icon: 'i-lucide-languages' },
+] as const
+
 const items = computed<DropdownMenuItem[][]>(() => ([[{
   type: 'label',
-  label: 'Appearance',
+  label: t('app.appearance'),
   avatar: user.value.avatar,
 }], [{
-  label: 'Theme',
+  label: t('app.colors'),
   icon: 'i-lucide-palette',
   children: [{
-    label: 'Primary',
+    label: t('app.primary'),
     slot: 'chip',
     chip: appConfig.ui.colors.primary,
     content: {
@@ -72,7 +81,7 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
       },
     })),
   }, {
-    label: 'Neutral',
+    label: t('app.neutral'),
     slot: 'chip',
     chip: appConfig.ui.colors.neutral === 'neutral' ? 'old-neutral' : appConfig.ui.colors.neutral,
     content: {
@@ -92,10 +101,10 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
     })),
   }],
 }, {
-  label: 'Appearance',
+  label: t('app.theme'),
   icon: 'i-lucide-sun-moon',
   children: [{
-    label: 'Light',
+    label: t('app.light'),
     icon: 'i-lucide-sun',
     type: 'checkbox',
     checked: colorMode.value === 'light',
@@ -104,7 +113,7 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
       colorMode.value = 'light'
     },
   }, {
-    label: 'Dark',
+    label: t('app.dark'),
     icon: 'i-lucide-moon',
     type: 'checkbox',
     checked: colorMode.value === 'dark',
@@ -117,6 +126,19 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
       e.preventDefault()
     },
   }],
+}, {
+  label: t('app.language'),
+  icon: 'i-lucide-languages',
+  children: localeOptions.map(option => ({
+    label: t(option.labelKey),
+    icon: option.icon,
+    type: 'checkbox',
+    checked: locale.value === option.value,
+    onSelect(e: Event) {
+      e.preventDefault()
+      locale.value = option.value
+    },
+  })),
 }]]))
 </script>
 
@@ -129,7 +151,7 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
     <UButton
       v-bind="{
         ...user,
-        label: collapsed ? undefined : user?.name,
+        label: collapsed ? undefined : t('app.settings'),
         trailingIcon: collapsed ? undefined : 'i-lucide-chevrons-up-down'
       }"
       color="neutral"

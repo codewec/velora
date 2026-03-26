@@ -1,4 +1,5 @@
 import { computed, h, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import PermitJoinToastDescription from '@/components/PermitJoinToastDescription.vue'
 import { useBridgeStore } from '@/stores/bridge'
@@ -6,6 +7,7 @@ import { useDevicesStore } from '@/stores/devices'
 
 export function usePermitJoinToasts() {
   const toast = useToast()
+  const { t } = useI18n()
   const bridgeStore = useBridgeStore()
   const devicesStore = useDevicesStore()
   const activeToastIds = new Set<string>()
@@ -51,14 +53,14 @@ export function usePermitJoinToasts() {
 
     const payload = {
       id,
-      title: 'Pairing enabled',
+      title: t('permitJoin.enabled'),
       description: h(PermitJoinToastDescription, { connectionId, initialTimeout }),
       color: 'warning' as const,
       duration: timeout * 1000,
       progress: false,
       close: false,
       actions: [{
-        label: 'Stop',
+        label: t('permitJoin.stop'),
         color: 'error' as const,
         variant: 'outline' as const,
         onClick: () => {

@@ -1,6 +1,7 @@
 import { readonly, ref, type Ref } from 'vue'
 
 import { getZ2MConnectionConfig } from '@/config/z2mConnections'
+import { i18n } from '@/i18n'
 import { useLogsStore } from '@/stores/logs'
 import type { Z2MMessage } from '@/types/z2m'
 
@@ -142,8 +143,8 @@ function createClient(connectionId: string, url: string): Z2MClient {
       return
     }
 
-    pushLog('info', `Connecting to ${url}`)
-    pushStoreLog('info', 'transport', 'Connecting', url)
+    pushLog('info', i18n.global.t('logsPage.connectingTo', { url }))
+    pushStoreLog('info', 'transport', i18n.global.t('logsPage.connecting'), url)
     clearReconnectTimer()
     shouldReconnect = true
 
@@ -153,8 +154,8 @@ function createClient(connectionId: string, url: string): Z2MClient {
     activeSocket.onopen = () => {
       isConnected.value = true
       isReconnecting.value = false
-      pushLog('info', 'Connection established')
-      pushStoreLog('info', 'transport', 'Connection established', url)
+      pushLog('info', i18n.global.t('logsPage.connectionEstablished'))
+      pushStoreLog('info', 'transport', i18n.global.t('logsPage.connectionEstablished'), url)
     }
 
     activeSocket.onmessage = (event) => {
@@ -174,7 +175,7 @@ function createClient(connectionId: string, url: string): Z2MClient {
         messagesDevice: metrics.value.messagesDevice + (message.topic.startsWith('bridge/') ? 0 : 1),
       }
 
-      pushStoreLog('debug', 'rx', `Received ${message.topic}`, JSON.stringify(message, null, 2))
+      pushStoreLog('debug', 'rx', i18n.global.t('logsPage.received', { topic: message.topic }), JSON.stringify(message, null, 2))
 
       for (const handler of handlers) {
         handler(message)
@@ -183,8 +184,8 @@ function createClient(connectionId: string, url: string): Z2MClient {
 
     activeSocket.onerror = () => {
       isConnected.value = false
-      pushLog('error', 'WebSocket transport error')
-      pushStoreLog('error', 'transport', 'WebSocket transport error', url)
+      pushLog('error', i18n.global.t('logsPage.websocketError'))
+      pushStoreLog('error', 'transport', i18n.global.t('logsPage.websocketError'), url)
       scheduleReconnect()
     }
 
@@ -192,12 +193,14 @@ function createClient(connectionId: string, url: string): Z2MClient {
       isConnected.value = false
       pushLog(
         event.code === 1000 ? 'info' : 'warning',
-        `Connection closed (code ${event.code}${event.reason ? `, ${event.reason}` : ''})`,
+        event.reason
+          ? i18n.global.t('logsPage.connectionClosedWithReason', { code: event.code, reason: event.reason })
+          : i18n.global.t('logsPage.connectionClosed', { code: event.code }),
       )
       pushStoreLog(
         event.code === 1000 ? 'info' : 'warning',
         'transport',
-        `Connection closed (${event.code})`,
+        i18n.global.t('logsPage.connectionClosed', { code: event.code }),
         JSON.stringify({ code: event.code, reason: event.reason || null }, null, 2),
       )
       cleanupSocket(activeSocket)
@@ -217,15 +220,15 @@ function createClient(connectionId: string, url: string): Z2MClient {
 
     const activeSocket = socket
     cleanupSocket(activeSocket)
-    pushLog('info', 'Connection closed by client')
-    pushStoreLog('info', 'transport', 'Connection closed by client', url)
+    pushLog('info', i18n.global.t('logsPage.connectionClosedByClient'))
+    pushStoreLog('info', 'transport', i18n.global.t('logsPage.connectionClosedByClient'), url)
     activeSocket.close()
   }
 
   function send(topic: string, payload: unknown) {
     if (!socket || socket.readyState !== WebSocket.OPEN) {
-      pushLog('warning', `Send skipped while socket is not open: ${topic}`)
-      pushStoreLog('warning', 'tx', `Send skipped ${topic}`, JSON.stringify({ topic, payload }, null, 2))
+      pushLog('warning', i18n.global.t('logsPage.sendSkippedClosed', { topic }))
+      pushStoreLog('warning', 'tx', i18n.global.t('logsPage.sendSkipped', { topic }), JSON.stringify({ topic, payload }, null, 2))
       return false
     }
 
@@ -236,8 +239,8 @@ function createClient(connectionId: string, url: string): Z2MClient {
       messagesSent: metrics.value.messagesSent + 1,
       bytesSent: metrics.value.bytesSent + raw.length,
     }
-    pushLog('info', `Sent ${topic}`)
-    pushStoreLog('info', 'tx', `Sent ${topic}`, JSON.stringify({ topic, payload }, null, 2))
+    pushLog('info', i18n.global.t('logsPage.sent', { topic }))
+    pushStoreLog('info', 'tx', i18n.global.t('logsPage.sent', { topic }), JSON.stringify({ topic, payload }, null, 2))
     return true
   }
 

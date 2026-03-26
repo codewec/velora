@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import ConnectionNavbarActions from '@/components/ConnectionNavbarActions.vue'
 import { useZ2M } from '@/composables/useZ2M'
@@ -13,6 +14,7 @@ const z2m = computed(() => useZ2M(props.connectionId))
 const logsStore = useLogsStore()
 const logs = computed(() => logsStore.logsFor(props.connectionId))
 const rawMode = ref(false)
+const { t } = useI18n()
 
 function badgeColor(level: string) {
   if (level === 'error') return 'error'
@@ -37,7 +39,7 @@ function clearLogs() {
 <template>
   <UDashboardPanel id="logs">
     <template #header>
-      <UDashboardNavbar title="Events">
+      <UDashboardNavbar :title="t('logsPage.title')">
         <template #leading>
           <UDashboardSidebarCollapse />
         </template>
@@ -50,18 +52,18 @@ function clearLogs() {
       <UDashboardToolbar>
         <template #left>
           <div class="flex items-center gap-3">
-            <UBadge color="neutral" variant="subtle">app events</UBadge>
-            <span class="text-sm text-muted">{{ logs.length }} entries</span>
+            <UBadge color="neutral" variant="subtle">{{ t('logsPage.appEvents') }}</UBadge>
+            <span class="text-sm text-muted">{{ t('logsPage.entries', { count: logs.length }) }}</span>
           </div>
         </template>
 
         <template #right>
           <div class="flex items-center gap-3">
             <div class="flex items-center gap-2">
-              <span class="text-sm text-muted">Raw</span>
+              <span class="text-sm text-muted">{{ t('logsPage.raw') }}</span>
               <USwitch v-model="rawMode" />
             </div>
-            <UButton color="neutral" variant="ghost" label="Clear" @click="clearLogs" />
+            <UButton color="neutral" variant="ghost" :label="t('app.clear')" @click="clearLogs" />
           </div>
         </template>
       </UDashboardToolbar>
@@ -95,8 +97,8 @@ ${entry.raw}` }}</pre>
 
       <UCard v-else class="border-slate-200/80 bg-white/80 dark:border-white/10 dark:bg-white/5" :ui="{ body: 'p-8' }">
         <div class="space-y-2 text-center">
-          <p class="text-lg font-semibold text-highlighted">No events yet</p>
-          <p class="text-sm text-muted">WebSocket traffic and app events will appear here.</p>
+          <p class="text-lg font-semibold text-highlighted">{{ t('logsPage.noEvents') }}</p>
+          <p class="text-sm text-muted">{{ t('logsPage.noEventsDescription') }}</p>
         </div>
       </UCard>
     </template>

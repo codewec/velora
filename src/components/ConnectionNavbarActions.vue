@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useZ2M } from '@/composables/useZ2M'
 import PermitJoinToggle from '@/components/PermitJoinToggle.vue'
@@ -11,6 +12,7 @@ const props = defineProps<{
 const isStatusDrawerOpen = ref(false)
 const z2m = computed(() => useZ2M(props.connectionId))
 const connectionLogs = computed(() => z2m.value.logs.value)
+const { t } = useI18n()
 
 const statusIcon = computed(() => {
   if (z2m.value.isConnected.value) {
@@ -38,14 +40,14 @@ const statusColor = computed(() => {
 
 const statusLabel = computed(() => {
   if (z2m.value.isConnected.value) {
-    return 'Connected'
+    return t('app.connected')
   }
 
   if (z2m.value.isReconnecting.value) {
-    return 'Reconnecting'
+    return t('app.reconnecting')
   }
 
-  return 'Disconnected'
+  return t('app.disconnected')
 })
 </script>
 
@@ -64,8 +66,8 @@ const statusLabel = computed(() => {
 
   <USlideover
     v-model:open="isStatusDrawerOpen"
-    title="Connection Log"
-    :description="`Transport events for ${connectionId}`"
+    :title="t('app.connectionLog')"
+    :description="t('app.connectionLogDescription', { connectionId })"
     side="right"
   >
     <template #body>
@@ -86,7 +88,7 @@ const statusLabel = computed(() => {
           }}</span>
         </div>
 
-        <UButton color="neutral" variant="ghost" label="Clear" @click="z2m.clearLogs()" />
+        <UButton color="neutral" variant="ghost" :label="t('app.clear')" @click="z2m.clearLogs()" />
       </div>
 
       <div v-if="connectionLogs.length" class="mt-4 space-y-3">
@@ -118,7 +120,7 @@ const statusLabel = computed(() => {
         v-else
         class="mt-4 rounded-2xl border border-dashed border-slate-300/80 p-6 text-sm text-slate-500 dark:border-white/10 dark:text-slate-400"
       >
-        No transport events yet.
+        {{ t('app.noTransportEvents') }}
       </div>
     </template>
   </USlideover>

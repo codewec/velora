@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useDevicesStore } from '@/stores/devices'
 import { useBridgeStore } from '@/stores/bridge'
 
 const bridgeStore = useBridgeStore()
 const devicesStore = useDevicesStore()
+const { t } = useI18n()
 const props = defineProps<{
   connectionId: string
 }>()
@@ -19,7 +21,7 @@ const formattedTimeout = computed(() => {
 const permitJoinOptions = computed(() => {
   const items = [
     {
-      label: 'All routers',
+      label: t('permitJoin.allRouters'),
       value: 'all',
       type: 'checkbox' as const,
       checked: bridgeStore.permitJoinTarget(props.connectionId) === 'all',
@@ -48,14 +50,14 @@ const selectedTargetLabel = computed(() => {
   const target = bridgeStore.permitJoinTarget(props.connectionId)
 
   if (target === 'all') {
-    return 'All routers'
+    return t('permitJoin.allRouters')
   }
 
   const device = devicesStore
     .permitJoinDevices(props.connectionId)
     .find((entry) => entry.friendly_name === target)
 
-  return device?.friendly_name || 'All routers'
+  return device?.friendly_name || t('permitJoin.allRouters')
 })
 
 let intervalId: ReturnType<typeof setInterval> | null = null

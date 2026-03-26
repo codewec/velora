@@ -1,5 +1,6 @@
 import { onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 import { useBridgeStore } from '@/stores/bridge'
 import type { InterviewSession } from '@/types/z2m'
@@ -15,22 +16,23 @@ function toastColor(status: InterviewSession['status']) {
   }
 }
 
-function toastDescription(session: InterviewSession) {
+function toastDescription(session: InterviewSession, t: ReturnType<typeof useI18n>['t']) {
   switch (session.status) {
     case 'interview_started':
-      return 'Interview started'
+      return t('interview.started')
     case 'successful':
-      return 'Interview completed successfully'
+      return t('interview.completed')
     case 'failed':
-      return session.error || 'Interview failed'
+      return session.error || t('interview.failed')
     default:
-      return 'Device joined, waiting for interview'
+      return t('interview.joined')
   }
 }
 
 export function useInterviewToasts() {
   const toast = useToast()
   const router = useRouter()
+  const { t } = useI18n()
   const bridgeStore = useBridgeStore()
   const statusBySession = new Map<string, InterviewSession['status']>()
   const removeTimers = new Map<string, ReturnType<typeof setTimeout>>()
@@ -44,7 +46,7 @@ export function useInterviewToasts() {
       variant: 'outline'
       onClick: () => void
     }> = [{
-      label: 'Open device',
+      label: t('interview.openDevice'),
       color: 'neutral' as const,
       variant: 'outline' as const,
       onClick: () => {
@@ -54,7 +56,7 @@ export function useInterviewToasts() {
 
     if (finished && bridgeStore.permitJoin(connectionId)) {
       actions.push({
-        label: 'Stop pairing',
+        label: t('interview.stopPairing'),
         color: 'error' as const,
         variant: 'outline' as const,
         onClick: () => {
@@ -66,7 +68,7 @@ export function useInterviewToasts() {
     const payload = {
       id,
       title: session.friendlyName,
-      description: toastDescription(session),
+      description: toastDescription(session, t),
       color: toastColor(session.status),
       duration: finished ? 5000 : 0,
       close: false,

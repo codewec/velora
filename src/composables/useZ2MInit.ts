@@ -6,6 +6,7 @@ import { useBridgeStore } from '@/stores/bridge'
 import { useDevicesStore } from '@/stores/devices'
 import { useIndicatorHistoryStore } from '@/stores/indicatorHistory'
 import { useLogsStore } from '@/stores/logs'
+import { i18n } from '@/i18n'
 import type {
   BridgeEvent,
   BridgeHealth,
@@ -51,7 +52,7 @@ export function useZ2MInit() {
       logsStore.addLog(connectionId, {
         level: 'info',
         kind: 'bridge',
-        summary: `Loaded devices (${message.payload.length})`,
+        summary: i18n.global.t('logsPage.loadedDevices', { count: message.payload.length }),
         raw: JSON.stringify(message.payload, null, 2),
       })
       devicesStore.setDevices(connectionId, message.payload as Device[])
@@ -62,7 +63,7 @@ export function useZ2MInit() {
       logsStore.addLog(connectionId, {
         level: 'info',
         kind: 'bridge',
-        summary: 'Bridge info updated',
+        summary: i18n.global.t('logsPage.bridgeInfoUpdated'),
         raw: JSON.stringify(message.payload, null, 2),
       })
       bridgeStore.setBridgeInfo(connectionId, message.payload as BridgeInfo)
@@ -73,7 +74,7 @@ export function useZ2MInit() {
       logsStore.addLog(connectionId, {
         level: 'info',
         kind: 'bridge',
-        summary: 'Bridge health updated',
+        summary: i18n.global.t('logsPage.bridgeHealthUpdated'),
         raw: JSON.stringify(message.payload, null, 2),
       })
       bridgeStore.setBridgeHealth(connectionId, message.payload as unknown as BridgeHealth)
@@ -84,7 +85,7 @@ export function useZ2MInit() {
       logsStore.addLog(connectionId, {
         level: message.payload.type === 'device_interview' ? 'warning' : 'info',
         kind: 'event',
-        summary: `Bridge event: ${message.payload.type}`,
+        summary: i18n.global.t('logsPage.bridgeEvent', { type: message.payload.type }),
         raw: JSON.stringify(message.payload, null, 2),
       })
       console.info('[z2m-ui] bridge/event', connectionId, message.payload)
@@ -96,7 +97,7 @@ export function useZ2MInit() {
       logsStore.addLog(connectionId, {
         level: message.payload.status === 'ok' ? 'info' : 'warning',
         kind: 'bridge',
-        summary: 'Permit join response',
+        summary: i18n.global.t('logsPage.permitJoinResponse'),
         raw: JSON.stringify(message.payload, null, 2),
       })
       bridgeStore.syncPermitJoinResponse(connectionId, message.payload)
@@ -110,7 +111,7 @@ export function useZ2MInit() {
       logsStore.addLog(connectionId, {
         level: 'debug',
         kind: 'device',
-        summary: `Device update: ${message.topic}`,
+        summary: i18n.global.t('logsPage.deviceUpdate', { topic: message.topic }),
         raw: JSON.stringify(message.payload, null, 2),
       })
       devicesStore.markDeviceRx(connectionId, friendlyName)

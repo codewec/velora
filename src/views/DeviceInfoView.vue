@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import DevicePageShell from '@/components/device/DevicePageShell.vue'
 import { useZ2M } from '@/composables/useZ2M'
@@ -25,6 +26,7 @@ const friendlyNameDraft = ref('')
 const homeassistantRename = ref(false)
 const bridgeStore = useBridgeStore()
 const devicesStore = useDevicesStore()
+const { t } = useI18n()
 
 const baseTopic = computed(() =>
   bridgeStore.infoFor(props.connectionId)?.config?.mqtt?.base_topic || 'zigbee2mqtt',
@@ -35,7 +37,7 @@ const homeassistantEnabled = computed(() =>
 
 function formatHex(value: number | undefined) {
   if (value == null) {
-    return 'Unknown'
+    return t('app.unknown')
   }
 
   return `0x${value.toString(16).toUpperCase().padStart(4, '0')}`
@@ -47,7 +49,7 @@ function ouiVendor(ieeeAddress: string) {
 
 function formatLastSeen(timestamp: number | null) {
   if (!timestamp) {
-    return 'Disabled'
+    return t('app.disabled')
   }
 
   return new Date(timestamp).toLocaleString()
@@ -55,24 +57,24 @@ function formatLastSeen(timestamp: number | null) {
 
 function metadataRows(device: Device) {
   const reportedLastSeen = devicesStore.deviceReportedLastSeen(props.connectionId, device.friendly_name)
-  const softwareBuild = device.software_build_id || 'Unknown'
+  const softwareBuild = device.software_build_id || t('app.unknown')
   const dateCode = device.date_code ? ` (${device.date_code})` : ''
 
   return [
-    { label: 'IEEE address', value: device.ieee_address },
-    { label: 'OUI', value: ouiVendor(device.ieee_address) },
-    { label: 'Vendor', value: device.definition?.vendor || device.manufacturer || 'Unknown' },
-    { label: 'Model', value: device.definition?.model || device.model_id || 'Unknown' },
-    { label: 'Zigbee model', value: `${device.model_id || 'Unknown'} (${device.manufacturer || 'Unknown'})` },
-    { label: 'Type', value: device.type },
-    { label: 'Power source', value: device.power_source || 'Unknown' },
-    { label: 'Network address', value: device.network_address != null ? `${device.network_address} (${formatHex(device.network_address)})` : 'Unknown' },
-    { label: 'MQTT topic', value: `${baseTopic.value}/${device.friendly_name}` },
-    { label: 'Software build', value: `${softwareBuild}${dateCode}` },
-    { label: 'Last seen', value: formatLastSeen(reportedLastSeen) },
-    { label: 'Interview completed', value: device.interview_completed == null ? 'Unknown' : (device.interview_completed ? 'Yes' : 'No') },
-    { label: 'Supported', value: device.supported == null ? 'Unknown' : (device.supported ? 'Yes' : 'No') },
-    { label: 'Disabled', value: device.disabled == null ? 'No' : (device.disabled ? 'Yes' : 'No') },
+    { label: t('deviceInfo.ieeeAddress'), value: device.ieee_address },
+    { label: t('deviceInfo.oui'), value: ouiVendor(device.ieee_address) },
+    { label: t('deviceInfo.vendor'), value: device.definition?.vendor || device.manufacturer || t('app.unknown') },
+    { label: t('deviceInfo.model'), value: device.definition?.model || device.model_id || t('app.unknown') },
+    { label: t('deviceInfo.zigbeeModel'), value: `${device.model_id || t('app.unknown')} (${device.manufacturer || t('app.unknown')})` },
+    { label: t('deviceInfo.type'), value: device.type },
+    { label: t('deviceInfo.powerSource'), value: device.power_source || t('app.unknown') },
+    { label: t('deviceInfo.networkAddress'), value: device.network_address != null ? `${device.network_address} (${formatHex(device.network_address)})` : t('app.unknown') },
+    { label: t('deviceInfo.mqttTopic'), value: `${baseTopic.value}/${device.friendly_name}` },
+    { label: t('deviceInfo.softwareBuild'), value: `${softwareBuild}${dateCode}` },
+    { label: t('devicePage.lastSeen'), value: formatLastSeen(reportedLastSeen) },
+    { label: t('deviceInfo.interviewCompleted'), value: device.interview_completed == null ? t('app.unknown') : (device.interview_completed ? t('app.yes') : t('app.no')) },
+    { label: t('deviceInfo.supported'), value: device.supported == null ? t('app.unknown') : (device.supported ? t('app.yes') : t('app.no')) },
+    { label: t('app.disabled'), value: device.disabled == null ? t('app.no') : (device.disabled ? t('app.yes') : t('app.no')) },
   ]
 }
 
@@ -94,7 +96,7 @@ async function saveFriendlyName(device: Device) {
 
   if (!nextFriendlyName) {
     toast.add({
-      title: 'Friendly name is required',
+      title: t('devicePage.friendlyNameRequired'),
       color: 'error',
     })
     isSavingFriendlyName.value = false
@@ -110,8 +112,8 @@ async function saveFriendlyName(device: Device) {
 
   if (!sent) {
     toast.add({
-      title: 'Failed to rename device',
-      description: 'WebSocket is not connected.',
+      title: t('devicePage.failedRename'),
+      description: t('devicePage.websocketDisconnected'),
       color: 'error',
     })
     isSavingFriendlyName.value = false
@@ -127,7 +129,7 @@ async function saveFriendlyName(device: Device) {
   isFriendlyNameModalOpen.value = false
 
   toast.add({
-    title: 'Device renamed',
+    title: t('devicePage.renamed'),
     description: `${previousFriendlyName} -> ${nextFriendlyName}`,
     color: 'success',
   })
@@ -146,8 +148,8 @@ async function saveDescription(device: Device) {
 
   if (!sent) {
     toast.add({
-      title: 'Failed to update description',
-      description: 'WebSocket is not connected.',
+      title: t('devicePage.failedUpdateDescription'),
+      description: t('devicePage.websocketDisconnected'),
       color: 'error',
     })
     isSavingDescription.value = false
@@ -162,8 +164,8 @@ async function saveDescription(device: Device) {
   isDescriptionModalOpen.value = false
 
   toast.add({
-    title: 'Description updated',
-    description: nextDescription || 'Description cleared',
+    title: t('devicePage.descriptionUpdated'),
+    description: nextDescription || t('devicePage.descriptionCleared'),
     color: 'success',
   })
 }
@@ -175,12 +177,12 @@ async function saveDescription(device: Device) {
       <div class="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
         <UCard class="border-slate-200/80 bg-white/80 dark:border-white/10 dark:bg-slate-950/50" :ui="{ body: 'p-5 sm:p-6' }">
           <div class="space-y-4">
-            <p class="text-sm uppercase tracking-[0.25em] text-slate-500">Metadata</p>
+            <p class="text-sm uppercase tracking-[0.25em] text-slate-500">{{ t('app.metadata') }}</p>
 
             <dl class="grid gap-x-6 gap-y-4 md:grid-cols-2">
               <div>
                 <dt class="flex items-center gap-2 text-sm text-slate-400 dark:text-slate-500">
-                  <span>Friendly name</span>
+                  <span>{{ t('devicePage.friendlyName') }}</span>
                   <UButton
                     icon="i-lucide-pencil"
                     color="neutral"
@@ -196,7 +198,7 @@ async function saveDescription(device: Device) {
 
               <div>
                 <dt class="flex items-center gap-2 text-sm text-slate-400 dark:text-slate-500">
-                  <span>Description</span>
+                  <span>{{ t('devicePage.description') }}</span>
                   <UButton
                     icon="i-lucide-pencil"
                     color="neutral"
@@ -206,7 +208,7 @@ async function saveDescription(device: Device) {
                   />
                 </dt>
                 <dd class="mt-1 text-sm text-slate-700 dark:text-slate-300">
-                  {{ device.description || device.definition?.description || 'Unknown' }}
+                  {{ device.description || device.definition?.description || t('deviceInfo.descriptionFallback') }}
                 </dd>
               </div>
 
@@ -236,10 +238,10 @@ async function saveDescription(device: Device) {
         </div>
       </div>
 
-      <UModal v-model:open="isDescriptionModalOpen" title="Update description">
+      <UModal v-model:open="isDescriptionModalOpen" :title="t('devicePage.updateDescription')">
         <template #body>
           <div class="space-y-4">
-            <UFormField label="Description" name="description">
+            <UFormField :label="t('devicePage.description')" name="description">
               <UTextarea
                 v-model="descriptionDraft"
                 :rows="4"
@@ -253,26 +255,26 @@ async function saveDescription(device: Device) {
         <template #footer>
           <div class="flex w-full items-center justify-end gap-3">
             <UButton color="neutral" variant="ghost" @click="isDescriptionModalOpen = false">
-              Cancel
+              {{ t('app.cancel') }}
             </UButton>
             <UButton :loading="isSavingDescription" @click="device && saveDescription(device)">
-              Save
+              {{ t('app.save') }}
             </UButton>
           </div>
         </template>
       </UModal>
 
-      <UModal v-model:open="isFriendlyNameModalOpen" title="Rename device">
+      <UModal v-model:open="isFriendlyNameModalOpen" :title="t('devicePage.renameDevice')">
         <template #body>
           <div class="space-y-4">
-            <UFormField label="Friendly name" name="friendly_name">
+            <UFormField :label="t('devicePage.friendlyName')" name="friendly_name">
               <UInput v-model="friendlyNameDraft" class="w-full" />
             </UFormField>
 
             <UCheckbox
               v-if="homeassistantEnabled"
               v-model="homeassistantRename"
-              label="Update Home Assistant entity ID"
+              :label="t('devicePage.updateHomeAssistantEntityId')"
             />
           </div>
         </template>
@@ -280,10 +282,10 @@ async function saveDescription(device: Device) {
         <template #footer>
           <div class="flex w-full items-center justify-end gap-3">
             <UButton color="neutral" variant="ghost" @click="isFriendlyNameModalOpen = false">
-              Cancel
+              {{ t('app.cancel') }}
             </UButton>
             <UButton :loading="isSavingFriendlyName" @click="device && saveFriendlyName(device)">
-              Rename
+              {{ t('devicePage.renameDevice') }}
             </UButton>
           </div>
         </template>
