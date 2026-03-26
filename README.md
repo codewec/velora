@@ -143,19 +143,37 @@ Standalone Docker is now covered by:
 - generated same-origin proxy routes for multiple Zigbee2MQTT instances
 - GitHub Actions for CI and Docker builds
 
-To ship a real Home Assistant add-on, the following still needs to be implemented:
+Home Assistant add-on packaging is now included in `velora/`:
 
-- add-on packaging:
-  - `config.json`
-  - add-on Docker image metadata
-  - icons / branding / repository structure
-- ingress-aware serving inside Home Assistant
-- add-on options schema for configuring multiple Zigbee2MQTT instances
-- add-on-side transport/proxy strategy for reaching Zigbee2MQTT from the HA environment
-- add-on documentation and install flow
+- `repository.yaml`
+- `velora/config.yaml`
+- `velora/build.yaml`
+- `velora/Dockerfile`
+- `velora/run.sh`
+- `velora/DOCS.md`
 
-In practice, the cleanest path is:
+### Add-on build model
 
-1. stabilize standalone Docker
-2. add production proxy support if needed
-3. wrap the same runtime into a Home Assistant add-on
+The add-on does not rebuild the frontend from source. Instead it wraps the published standalone runtime image:
+
+- default standalone image: `ghcr.io/codewec/velora:dev`
+- add-on base image: `ghcr.io/home-assistant/amd64-base:3.22`
+
+That keeps the add-on packaging small and lets the standalone pipeline remain the source of truth for the runtime image.
+
+### Add-on configuration
+
+The add-on uses the same runtime JSON contract as the standalone container, exposed as Home Assistant add-on string options:
+
+- `connections_json`
+- `proxy_targets_json`
+- `api_url_json`
+
+The recommended add-on setup is to provide `proxy_targets_json` and let Velora derive same-origin frontend connections automatically.
+
+### What is still missing for a polished add-on release
+
+- add-on icon/logo assets
+- release process that updates the add-on image reference from `:dev` to a versioned image tag
+- optional add-on specific GitHub Actions build/publish workflow
+- real-world validation inside Home Assistant OS / ingress

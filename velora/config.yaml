@@ -1,0 +1,21 @@
+name: Velora
+version: "0.0.0"
+slug: velora
+description: Alternative Zigbee2MQTT web UI
+url: https://github.com/codewec/velora
+ingress: true
+ingress_port: 8080
+panel_icon: mdi:zigbee
+panel_title: Velora
+init: false
+startup: application
+arch:
+  - amd64
+options:
+  connections_json: ""
+  proxy_targets_json: ""
+  api_url_json: ""
+schema:
+  connections_json: str?
+  proxy_targets_json: str?
+  api_url_json: str?
