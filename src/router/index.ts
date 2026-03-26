@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { getDefaultConnectionId } from '@/config/z2mConnections'
+import { getDefaultConnectionId, getZ2MConnectionConfig } from '@/config/z2mConnections'
+import { getSavedConnectionId, saveConnectionId } from '@/composables/useConnectionPreference'
 import DevicesView from '@/views/DevicesView.vue'
 import DeviceExposesView from '@/views/DeviceExposesView.vue'
 import DeviceInfoView from '@/views/DeviceInfoView.vue'
@@ -13,7 +14,14 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      redirect: `/connections/${getDefaultConnectionId()}`,
+      redirect: () => {
+        const savedConnectionId = getSavedConnectionId()
+        const connectionId = savedConnectionId && getZ2MConnectionConfig(savedConnectionId)
+          ? savedConnectionId
+          : getDefaultConnectionId()
+
+        return `/connections/${connectionId}`
+      },
     },
     {
       path: '/connections/:connectionId',
@@ -62,6 +70,44 @@ const router = createRouter({
       props: true,
     },
   ],
+})
+
+router.beforeEach((to) => {
+  const rawConnectionId = typeof to.params.connectionId === 'string' ? to.params.connectionId : null
+
+  if (!rawConnectionId) {
+    return true
+  }
+
+  const connection = getZ2MConnectionConfig(rawConnectionId)
+
+  if (!connection) {
+    const fallbackConnectionId = getSavedConnectionId()
+    const connectionId = fallbackConnectionId && getZ2MConnectionConfig(fallbackConnectionId)
+      ? fallbackConnectionId
+      : getDefaultConnectionId()
+
+    if (to.name === 'device-exposes' || to.name === 'device-info' || to.name === 'device-state') {
+      return `/connections/${connectionId}/devices/${to.params.id}/${String(to.name).replace('device-', '')}`
+    }
+
+    if (to.name === 'logs') {
+      return `/connections/${connectionId}/logs`
+    }
+
+    if (to.name === 'information') {
+      return `/connections/${connectionId}/information`
+    }
+
+    if (to.name === 'network-map') {
+      return `/connections/${connectionId}/network-map`
+    }
+
+    return `/connections/${connectionId}`
+  }
+
+  saveConnectionId(rawConnectionId)
+  return true
 })
 
 export default router

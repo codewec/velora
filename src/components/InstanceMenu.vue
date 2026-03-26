@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import type { DropdownMenuItem } from '@nuxt/ui'
 
 import { getDefaultConnectionId, getZ2MConnectionConfigs } from '@/config/z2mConnections'
+import { saveConnectionId } from '@/composables/useConnectionPreference'
 
 defineProps<{
   collapsed?: boolean
@@ -26,8 +27,21 @@ const selectedConnection = computed(() => {
 })
 
 function buildTargetPath(connectionId: string) {
-  if (route.name === 'device' && typeof route.params.id === 'string') {
-    return `/connections/${connectionId}/devices/${route.params.id}`
+  if ((route.name === 'device-exposes' || route.name === 'device-info' || route.name === 'device-state') && typeof route.params.id === 'string') {
+    const tab = String(route.name).replace('device-', '')
+    return `/connections/${connectionId}/devices/${route.params.id}/${tab}`
+  }
+
+  if (route.name === 'logs') {
+    return `/connections/${connectionId}/logs`
+  }
+
+  if (route.name === 'information') {
+    return `/connections/${connectionId}/information`
+  }
+
+  if (route.name === 'network-map') {
+    return `/connections/${connectionId}/network-map`
   }
 
   return `/connections/${connectionId}`
@@ -37,6 +51,7 @@ const items = computed<DropdownMenuItem[][]>(() => {
   return [connections.value.map(connection => ({
     ...connection,
     onSelect() {
+      saveConnectionId(connection.id)
       router.push(buildTargetPath(connection.id))
     },
   }))]
