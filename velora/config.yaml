@@ -12,10 +12,6 @@ startup: application
 arch:
   - amd64
 options:
-  connections_json: ""
-  proxy_targets_json: ""
-  api_url_json: ""
+  z2m_targets_json: ""
 schema:
-  connections_json: str?
-  proxy_targets_json: str?
-  api_url_json: str?
+  z2m_targets_json: str?

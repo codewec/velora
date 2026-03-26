@@ -165,11 +165,37 @@ That keeps the add-on packaging small and lets the standalone pipeline remain th
 
 The add-on uses the same runtime JSON contract as the standalone container, exposed as Home Assistant add-on string options:
 
-- `connections_json`
-- `proxy_targets_json`
-- `api_url_json`
+- `z2m_targets_json`
 
-The recommended add-on setup is to provide `proxy_targets_json` and let Velora derive same-origin frontend connections automatically.
+The recommended add-on setup is to provide `z2m_targets_json`. The add-on then derives the ingress-safe frontend connections automatically.
+
+### How the Home Assistant add-on connects to Zigbee2MQTT
+
+Velora does not use the browser-facing Home Assistant ingress URL of the Zigbee2MQTT add-on as its backend target. Instead it connects to the internal Zigbee2MQTT add-on host and its frontend WebSocket endpoint at `/api`, then exposes that through the Velora add-on ingress-local `ws-proxy/...` route.
+
+For example, if Zigbee2MQTT is opened in Home Assistant at:
+
+```text
+http://192.168.1.130:8123/45df7312_zigbee2mqtt
+```
+
+then:
+
+- add-on identifier: `45df7312_zigbee2mqtt`
+- likely internal host: `45df7312-zigbee2mqtt`
+- Zigbee2MQTT frontend endpoint: `http://45df7312-zigbee2mqtt:8099/api`
+
+So the Velora add-on option should be:
+
+```yaml
+z2m_targets_json: "[{\"id\":\"main\",\"label\":\"Main\",\"target\":\"http://45df7312-zigbee2mqtt:8099\"}]"
+```
+
+Multiple instances example:
+
+```yaml
+z2m_targets_json: "[{\"id\":\"main\",\"label\":\"Main\",\"target\":\"http://45df7312-zigbee2mqtt:8099\"},{\"id\":\"garage\",\"label\":\"Garage\",\"target\":\"http://45df7312-zigbee2mqtt-garage:8099\"}]"
+```
 
 ### What is still missing for a polished add-on release
 

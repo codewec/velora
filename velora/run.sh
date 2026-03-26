@@ -4,9 +4,7 @@ set -euo pipefail
 runtime_config_path="/srv/runtime-config.js"
 nginx_config_path="/tmp/nginx.conf"
 
-connections_json="$(bashio::config 'connections_json')"
-proxy_targets_json="$(bashio::config 'proxy_targets_json')"
-api_url_json="$(bashio::config 'api_url_json')"
+z2m_targets_json="$(bashio::config 'z2m_targets_json')"
 
 validate_json() {
   local value="$1"
@@ -19,17 +17,15 @@ validate_json() {
 }
 
 # Home Assistant add-on options are stored as strings. We validate them before
-# passing the values to the existing Velora runtime so broken JSON fails fast
-# during startup instead of surfacing later as a blank page or broken proxy.
-validate_json "$connections_json" "connections_json"
-validate_json "$proxy_targets_json" "proxy_targets_json"
-validate_json "$api_url_json" "api_url_json"
+# generating the runtime frontend config so broken JSON fails fast during
+# startup instead of surfacing later as a blank page or broken proxy.
+validate_json "$z2m_targets_json" "z2m_targets_json"
 
-if [ -z "$connections_json" ] && [ -n "$proxy_targets_json" ] && [ "$proxy_targets_json" != "[]" ]; then
-  # In Home Assistant we reuse the ingress `ws-proxy/<host:port/path>` contract
-  # used by Windfront. Targets therefore become frontend URLs like
-  # `45df7312-zigbee2mqtt:8099/api` instead of local `/api/z2m/...` routes.
-  connections_json="$(printf '%s' "$proxy_targets_json" | jq -c '[.[] | {
+if [ -n "$z2m_targets_json" ] && [ "$z2m_targets_json" != "[]" ]; then
+  # Home Assistant uses the Windfront-style `ws-proxy/<host:port/path>`
+  # transport. Each configured Z2M target therefore becomes a frontend
+  # connection like `45df7312-zigbee2mqtt:8099/api`.
+  runtime_connections_json="$(printf '%s' "$z2m_targets_json" | jq -c '[.[] | {
     id: .id,
     label: (.label // .id),
     mode: "proxy",
@@ -38,21 +34,13 @@ if [ -z "$connections_json" ] && [ -n "$proxy_targets_json" ] && [ "$proxy_targe
       + (if (.target | test("/api/?$")) then "" else "/api" end)
     )
   }]')"
-fi
-
-if [ -n "$connections_json" ]; then
-  runtime_connections_json="$connections_json"
 else
   runtime_connections_json="undefined"
 fi
 
-if [ -n "$api_url_json" ]; then
-  runtime_api_url_json="$api_url_json"
-else
-  runtime_api_url_json="undefined"
-fi
+runtime_api_url_json="undefined"
 
-echo "[velora] runtime proxy targets: ${proxy_targets_json}"
+echo "[velora] runtime z2m targets: ${z2m_targets_json}"
 echo "[velora] runtime frontend connections: ${runtime_connections_json}"
 echo "[velora] runtime apiUrl fallback: ${runtime_api_url_json}"
 
