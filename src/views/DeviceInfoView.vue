@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 
 import DevicePageShell from '@/components/device/DevicePageShell.vue'
 import { useZ2M } from '@/composables/useZ2M'
@@ -8,6 +9,7 @@ import { useBridgeStore } from '@/stores/bridge'
 import { useDevicesStore } from '@/stores/devices'
 import { OUI } from '@/utils/oui'
 import { deviceImageUrl } from '@/utils/devicePresentation'
+import { createTransactionId } from '@/utils/transaction'
 import type { Device } from '@/types/z2m'
 
 const props = defineProps<{
@@ -15,6 +17,7 @@ const props = defineProps<{
   id: string
 }>()
 
+const router = useRouter()
 const toast = useToast()
 const imageFailed = ref(false)
 const isDescriptionModalOpen = ref(false)
@@ -24,6 +27,12 @@ const isFriendlyNameModalOpen = ref(false)
 const isSavingFriendlyName = ref(false)
 const friendlyNameDraft = ref('')
 const homeassistantRename = ref(false)
+const isReconfigureModalOpen = ref(false)
+const isInterviewModalOpen = ref(false)
+const isRemoveModalOpen = ref(false)
+const isSubmittingDangerAction = ref(false)
+const removeForce = ref(false)
+const removeBlock = ref(false)
 const bridgeStore = useBridgeStore()
 const devicesStore = useDevicesStore()
 const { t } = useI18n()
@@ -108,6 +117,7 @@ async function saveFriendlyName(device: Device) {
     from: previousFriendlyName,
     to: nextFriendlyName,
     homeassistant_rename: homeassistantRename.value,
+    transaction: createTransactionId(),
   })
 
   if (!sent) {
@@ -144,6 +154,7 @@ async function saveDescription(device: Device) {
     options: {
       description: nextDescription,
     },
+    transaction: createTransactionId(),
   })
 
   if (!sent) {
@@ -168,6 +179,92 @@ async function saveDescription(device: Device) {
     description: nextDescription || t('devicePage.descriptionCleared'),
     color: 'success',
   })
+}
+
+function openRemoveModal() {
+  removeForce.value = false
+  removeBlock.value = false
+  isRemoveModalOpen.value = true
+}
+
+async function runDangerAction(
+  topic: 'bridge/request/device/configure' | 'bridge/request/device/interview' | 'bridge/request/device/remove',
+  payload: Record<string, unknown>,
+  successTitle: string,
+  successDescription?: string,
+) {
+  isSubmittingDangerAction.value = true
+
+  const sent = useZ2M(props.connectionId).send(topic, {
+    ...payload,
+    transaction: createTransactionId(),
+  })
+
+  if (!sent) {
+    toast.add({
+      title: t('devicePage.dangerActionFailed'),
+      description: t('devicePage.websocketDisconnected'),
+      color: 'error',
+    })
+    isSubmittingDangerAction.value = false
+    return false
+  }
+
+  toast.add({
+    title: successTitle,
+    description: successDescription,
+    color: 'success',
+  })
+
+  isSubmittingDangerAction.value = false
+  return true
+}
+
+async function reconfigureDevice(device: Device) {
+  const done = await runDangerAction(
+    'bridge/request/device/configure',
+    { id: device.ieee_address },
+    t('devicePage.reconfigureStarted'),
+    device.friendly_name,
+  )
+
+  if (done) {
+    isReconfigureModalOpen.value = false
+  }
+}
+
+async function interviewDevice(device: Device) {
+  const done = await runDangerAction(
+    'bridge/request/device/interview',
+    { id: device.ieee_address },
+    t('devicePage.interviewStarted'),
+    device.friendly_name,
+  )
+
+  if (done) {
+    isInterviewModalOpen.value = false
+  }
+}
+
+async function removeDevice(device: Device) {
+  const done = await runDangerAction(
+    'bridge/request/device/remove',
+    {
+      id: device.ieee_address,
+      force: removeForce.value,
+      block: removeBlock.value,
+    },
+    t('devicePage.removeRequested'),
+    device.friendly_name,
+  )
+
+  if (done) {
+    isRemoveModalOpen.value = false
+
+    if (removeForce.value) {
+      router.push(`/connections/${props.connectionId}`)
+    }
+  }
 }
 </script>
 
@@ -224,17 +321,57 @@ async function saveDescription(device: Device) {
           </div>
         </UCard>
 
-        <div class="flex min-h-72 items-center justify-center overflow-hidden rounded-3xl bg-slate-100/80 p-6 ring ring-slate-200 backdrop-blur dark:bg-slate-900/60 dark:ring-white/10">
-          <img
-            v-if="deviceImageUrl(device) && !imageFailed"
-            :src="deviceImageUrl(device) || undefined"
-            :alt="device.friendly_name"
-            class="max-h-96 w-full object-contain"
-            @error="imageFailed = true"
-          />
-          <span v-else class="text-6xl font-semibold text-slate-500 dark:text-slate-400">
-            {{ device.friendly_name.slice(0, 1).toUpperCase() }}
-          </span>
+        <div class="space-y-6">
+          <div class="flex min-h-72 items-center justify-center overflow-hidden rounded-3xl bg-slate-100/80 p-6 ring ring-slate-200 backdrop-blur dark:bg-slate-900/60 dark:ring-white/10">
+            <img
+              v-if="deviceImageUrl(device) && !imageFailed"
+              :src="deviceImageUrl(device) || undefined"
+              :alt="device.friendly_name"
+              class="max-h-96 w-full object-contain"
+              @error="imageFailed = true"
+            />
+            <span v-else class="text-6xl font-semibold text-slate-500 dark:text-slate-400">
+              {{ device.friendly_name.slice(0, 1).toUpperCase() }}
+            </span>
+          </div>
+
+          <UCard
+            class="border-rose-200/80 bg-rose-50/70 dark:border-rose-500/20 dark:bg-rose-950/20"
+            :ui="{ body: 'p-5 sm:p-6' }"
+          >
+            <div class="space-y-4">
+              <div>
+                <p class="text-sm uppercase tracking-[0.25em] text-rose-500 dark:text-rose-300">{{ t('devicePage.dangerZone') }}</p>
+                <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                  {{ t('devicePage.dangerZoneDescription') }}
+                </p>
+              </div>
+
+              <div class="flex flex-wrap gap-3">
+                <UButton
+                  color="warning"
+                  variant="soft"
+                  icon="i-lucide-wrench"
+                  :label="t('devicePage.reconfigure')"
+                  @click="isReconfigureModalOpen = true"
+                />
+                <UButton
+                  color="warning"
+                  variant="soft"
+                  icon="i-lucide-scan-search"
+                  :label="t('devicePage.interviewDevice')"
+                  @click="isInterviewModalOpen = true"
+                />
+                <UButton
+                  color="error"
+                  variant="soft"
+                  icon="i-lucide-trash-2"
+                  :label="t('devicePage.removeDevice')"
+                  @click="openRemoveModal"
+                />
+              </div>
+            </div>
+          </UCard>
         </div>
       </div>
 
@@ -286,6 +423,77 @@ async function saveDescription(device: Device) {
             </UButton>
             <UButton :loading="isSavingFriendlyName" @click="device && saveFriendlyName(device)">
               {{ t('devicePage.renameDevice') }}
+            </UButton>
+          </div>
+        </template>
+      </UModal>
+
+      <UModal v-model:open="isReconfigureModalOpen" :title="t('devicePage.reconfigure')">
+        <template #body>
+          <p class="text-sm text-slate-600 dark:text-slate-300">
+            {{ t('devicePage.reconfigureDescription') }}
+          </p>
+        </template>
+
+        <template #footer>
+          <div class="flex w-full items-center justify-end gap-3">
+            <UButton color="neutral" variant="ghost" @click="isReconfigureModalOpen = false">
+              {{ t('app.cancel') }}
+            </UButton>
+            <UButton color="warning" :loading="isSubmittingDangerAction" @click="device && reconfigureDevice(device)">
+              {{ t('devicePage.reconfigure') }}
+            </UButton>
+          </div>
+        </template>
+      </UModal>
+
+      <UModal v-model:open="isInterviewModalOpen" :title="t('devicePage.interviewDevice')">
+        <template #body>
+          <p class="text-sm text-slate-600 dark:text-slate-300">
+            {{ t('devicePage.interviewDescription') }}
+          </p>
+        </template>
+
+        <template #footer>
+          <div class="flex w-full items-center justify-end gap-3">
+            <UButton color="neutral" variant="ghost" @click="isInterviewModalOpen = false">
+              {{ t('app.cancel') }}
+            </UButton>
+            <UButton color="warning" :loading="isSubmittingDangerAction" @click="device && interviewDevice(device)">
+              {{ t('devicePage.interviewDevice') }}
+            </UButton>
+          </div>
+        </template>
+      </UModal>
+
+      <UModal v-model:open="isRemoveModalOpen" :title="t('devicePage.removeDevice')">
+        <template #body>
+          <div class="space-y-4">
+            <p class="text-sm text-slate-600 dark:text-slate-300">
+              {{ t('devicePage.removeDescription') }}
+            </p>
+
+            <UCheckbox
+              v-model="removeForce"
+              :label="t('devicePage.removeForce')"
+              :description="t('devicePage.removeForceDescription')"
+            />
+
+            <UCheckbox
+              v-model="removeBlock"
+              :label="t('devicePage.removeBlock')"
+              :description="t('devicePage.removeBlockDescription')"
+            />
+          </div>
+        </template>
+
+        <template #footer>
+          <div class="flex w-full items-center justify-end gap-3">
+            <UButton color="neutral" variant="ghost" @click="isRemoveModalOpen = false">
+              {{ t('app.cancel') }}
+            </UButton>
+            <UButton color="error" :loading="isSubmittingDangerAction" @click="device && removeDevice(device)">
+              {{ t('devicePage.removeDevice') }}
             </UButton>
           </div>
         </template>

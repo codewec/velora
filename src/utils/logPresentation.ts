@@ -9,6 +9,7 @@ export interface ParsedBridgeLoggingPayload {
   level?: string
   message: string
   deviceName: string | null
+  shortReason: string | null
 }
 
 export function compactJson(value: unknown) {
@@ -51,11 +52,15 @@ export function parseBridgeLoggingPayload(raw: string): ParsedBridgeLoggingPaylo
     const deviceName = parsed.message.match(/to '([^']+)' failed/i)?.[1]
       ?? parsed.message.match(/from '([^']+)'/i)?.[1]
       ?? null
+    const shortReason = parsed.message.match(/\(([^()]+)\)\s*'?$/)?.[1]
+      ?? parsed.message.match(/failed:\s*'?(.*)$/i)?.[1]
+      ?? null
 
     return {
       level: typeof parsed.level === 'string' ? parsed.level : undefined,
       message: parsed.message,
       deviceName,
+      shortReason: shortReason?.trim() || null,
     }
   } catch {
     return null

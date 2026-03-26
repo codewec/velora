@@ -5,6 +5,16 @@ import { useLogDetailsStore } from '@/stores/logDetails'
 import { useLogsStore } from '@/stores/logs'
 import { parseBridgeLoggingPayload } from '@/utils/logPresentation'
 
+function truncateText(value: string, maxLength = 200) {
+  const normalized = value.replaceAll(/\s+/g, ' ').trim()
+
+  if (normalized.length <= maxLength) {
+    return normalized
+  }
+
+  return `${normalized.slice(0, maxLength - 1).trimEnd()}…`
+}
+
 export function useErrorLogToasts() {
   const toast = useToast()
   const { t } = useI18n()
@@ -35,9 +45,13 @@ export function useErrorLogToasts() {
           }
 
           const bridgeLoggingPayload = parseBridgeLoggingPayload(entry.raw)
-          const description = bridgeLoggingPayload?.deviceName
-            ? t('logsPage.deviceErrorSource', { device: bridgeLoggingPayload.deviceName })
-            : bridgeLoggingPayload?.message || entry.summary
+          const description = truncateText(
+            bridgeLoggingPayload?.deviceName
+              ? bridgeLoggingPayload.shortReason
+                ? `${t('logsPage.deviceErrorSource', { device: bridgeLoggingPayload.deviceName })} · ${bridgeLoggingPayload.shortReason}`
+                : t('logsPage.deviceErrorSource', { device: bridgeLoggingPayload.deviceName })
+              : bridgeLoggingPayload?.shortReason || bridgeLoggingPayload?.message || entry.summary,
+          )
 
           toast.add({
             id: `log-error:${entry.id}`,

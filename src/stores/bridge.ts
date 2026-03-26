@@ -2,6 +2,7 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
 import { useZ2M } from '@/composables/useZ2M'
+import { createTransactionId } from '@/utils/transaction'
 import type {
   BridgeEvent,
   BridgeHealth,
@@ -227,7 +228,10 @@ export const useBridgeStore = defineStore('bridge', () => {
       payload.device = device
     }
 
-    useZ2M(connectionId).send('bridge/request/permit_join', payload)
+    useZ2M(connectionId).send('bridge/request/permit_join', {
+      ...payload,
+      transaction: createTransactionId(),
+    })
   }
 
   function tickTimeout(connectionId: string) {
