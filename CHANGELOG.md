@@ -1,6 +1,19 @@
 # Changelog
 
 
+## v0.0.4
+
+[compare changes](https://github.com/codewec/velora/compare/v0.0.3...v0.0.4)
+
+### 🏡 Chore
+
+- Up ver ([44fe392](https://github.com/codewec/velora/commit/44fe392))
+- Changelog for ha ([c5a7127](https://github.com/codewec/velora/commit/c5a7127))
+
+### ❤️ Contributors
+
+- Codewec
+
 ## v0.0.3
 
 [compare changes](https://github.com/codewec/velora/compare/v0.0.2...v0.0.3)
