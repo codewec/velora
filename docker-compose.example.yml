@@ -1,0 +1,11 @@
+services:
+  velora:
+    build:
+      context: .
+    ports:
+      - "8080:8080"
+    environment:
+      VELORA_CONNECTIONS_JSON: >-
+        [{"id":"main","label":"Main","mode":"proxy","url":"/api/z2m/main/ws"}]
+      VELORA_PROXY_TARGETS_JSON: >-
+        [{"id":"main","label":"Main","target":"http://zigbee2mqtt:8080"}]

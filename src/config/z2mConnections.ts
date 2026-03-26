@@ -1,3 +1,5 @@
+import { getVeloraRuntimeConfig } from '@/config/runtimeConfig'
+
 export type Z2MConnectionMode = 'ha-ingress' | 'direct' | 'proxy'
 
 export interface Z2MConnectionConfig {
@@ -23,6 +25,24 @@ function isConnectionConfig(value: unknown): value is Z2MConnectionConfig {
 }
 
 function parseConnectionsEnv(): Z2MConnectionConfig[] {
+  const runtimeConfig = getVeloraRuntimeConfig()
+  const runtimeConnections = runtimeConfig.connections
+
+  if (Array.isArray(runtimeConnections)) {
+    return runtimeConnections.filter(isConnectionConfig)
+  }
+
+  if (typeof runtimeConfig.apiUrl === 'string' && runtimeConfig.apiUrl) {
+    return [
+      {
+        id: 'default',
+        label: 'Default',
+        mode: 'direct',
+        url: runtimeConfig.apiUrl,
+      },
+    ]
+  }
+
   const raw = import.meta.env.VITE_Z2M_CONNECTIONS
 
   if (raw) {
