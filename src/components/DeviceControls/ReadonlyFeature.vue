@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import FeatureHeader from '@/components/DeviceControls/FeatureHeader.vue'
 import { useIndicatorHistoryStore } from '@/stores/indicatorHistory'
 import type { DeviceStateValue, Expose } from '@/types/z2m'
-import { featureKey } from '@/utils/featureMeta'
+import { featureKey, featureTitle } from '@/utils/featureMeta'
 import { buildValueTrail, formatFeatureValue } from '@/utils/featureValue'
 
 const props = defineProps<{
@@ -14,7 +15,10 @@ const props = defineProps<{
   stateValue: DeviceStateValue | undefined
 }>()
 
+const { t } = useI18n()
 const indicatorHistoryStore = useIndicatorHistoryStore()
+const isHistoryModalOpen = ref(false)
+const historyListRef = ref<HTMLElement | null>(null)
 
 const formattedValue = computed(() => formatFeatureValue(props.expose, props.stateValue))
 
@@ -31,10 +35,54 @@ const valueTrail = computed(() =>
     props.expose,
   ),
 )
+
+const hasPreviousValues = computed(() =>
+  historyEntries.value.some(entry => entry.value !== props.stateValue),
+)
+
+const historyRows = computed(() => {
+  const entries = [...historyEntries.value]
+
+  // The history store keeps newest values first. We expose them directly so
+  // the modal always reflects the current state at the top and live updates
+  // simply prepend a new row without any extra synchronization logic.
+  if (!entries.length || entries[0]?.value !== props.stateValue) {
+    return [{
+      id: 'current',
+      value: props.stateValue,
+      changedAt: Date.now(),
+      current: true,
+    }]
+  }
+
+  return entries.map((entry, index) => ({
+    id: `${entry.changedAt}:${index}`,
+    value: entry.value,
+    changedAt: entry.changedAt,
+    current: index === 0,
+  }))
+})
+
+watch(
+  () => [isHistoryModalOpen.value, historyRows.value[0]?.id] as const,
+  ([open, firstRowId], [previousOpen, previousFirstRowId]) => {
+    if (!open || !firstRowId || firstRowId === previousFirstRowId) {
+      return
+    }
+
+    const behavior: ScrollBehavior = previousOpen ? 'smooth' : 'auto'
+    historyListRef.value?.scrollTo({ top: 0, behavior })
+  },
+)
 </script>
 
 <template>
-  <UCard class="border-slate-200/80 bg-white/80 dark:border-white/10 dark:bg-slate-950/50" :ui="{ body: 'p-4' }">
+  <UCard
+    class="border-slate-200/80 bg-white/80 dark:border-white/10 dark:bg-slate-950/50"
+    :class="hasPreviousValues ? 'cursor-pointer transition-colors hover:border-primary/40 hover:bg-white/90 dark:hover:bg-slate-950/60' : ''"
+    :ui="{ body: 'p-4' }"
+    @click="hasPreviousValues ? (isHistoryModalOpen = true) : undefined"
+  >
     <div class="relative overflow-hidden">
       <div class="pointer-events-none absolute inset-0 flex items-center justify-end overflow-hidden">
         <!--
@@ -65,4 +113,40 @@ const valueTrail = computed(() =>
       </div>
     </div>
   </UCard>
+
+  <UModal
+    v-model:open="isHistoryModalOpen"
+    :title="featureTitle(expose)"
+    :description="t('devicePage.indicatorHistoryDescription', { device: deviceName })"
+    :ui="{ content: 'sm:max-w-2xl' }"
+  >
+    <template #body>
+      <div
+        ref="historyListRef"
+        class="space-y-3 overflow-y-auto sm:h-[32rem]"
+      >
+        <div
+          v-for="row in historyRows"
+          :key="row.id"
+          class="flex items-center justify-between gap-4 rounded-2xl bg-slate-100/80 px-4 py-3 dark:bg-slate-900/60"
+        >
+          <div class="min-w-0">
+            <p class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+              {{ formatFeatureValue(expose, row.value) }}
+            </p>
+            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              {{ new Date(row.changedAt).toLocaleString() }}
+            </p>
+          </div>
+
+          <UBadge
+            :color="row.current ? 'primary' : 'neutral'"
+            :variant="row.current ? 'soft' : 'subtle'"
+          >
+            {{ row.current ? t('devicePage.currentValue') : t('devicePage.previousValue') }}
+          </UBadge>
+        </div>
+      </div>
+    </template>
+  </UModal>
 </template>
