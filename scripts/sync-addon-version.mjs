@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from 'node:fs'
+import { copyFileSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 // This script keeps the Home Assistant add-on metadata aligned with the main
@@ -6,8 +6,10 @@ import { resolve } from 'node:path'
 // `pnpm run release` updates all release-facing version fields together.
 const rootDir = resolve(import.meta.dirname, '..')
 const packageJsonPath = resolve(rootDir, 'package.json')
+const changelogPath = resolve(rootDir, 'CHANGELOG.md')
 const addonConfigPath = resolve(rootDir, 'velora', 'config.yaml')
 const addonBuildPath = resolve(rootDir, 'velora', 'build.yaml')
+const addonChangelogPath = resolve(rootDir, 'velora', 'CHANGELOG.md')
 
 const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'))
 const version = packageJson.version
@@ -47,3 +49,7 @@ if (!/^(\s*VELORA_IMAGE:\s*).+$/m.test(addonBuild)) {
 if (nextAddonBuild !== addonBuild) {
   writeFileSync(addonBuildPath, nextAddonBuild)
 }
+
+// Home Assistant reads the add-on changelog from the add-on directory itself,
+// so we mirror the root project changelog into `velora/CHANGELOG.md`.
+copyFileSync(changelogPath, addonChangelogPath)
