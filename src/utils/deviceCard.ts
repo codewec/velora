@@ -1,6 +1,7 @@
 import type { ComposerTranslation } from 'vue-i18n'
 
 import type { Device } from '@/types/z2m'
+import { formatBrowserDateTime } from '@/utils/dateTime'
 
 type DeviceCardBadge = {
   label: string
@@ -9,17 +10,50 @@ type DeviceCardBadge = {
   iconClass: string
 }
 
+export function deviceTypeBadge(device: Device, t: ComposerTranslation): DeviceCardBadge {
+  const type = device.type.toLowerCase()
+
+  if (type === 'router') {
+    return {
+      label: t('deviceCard.router'),
+      icon: 'lucide:router',
+      tooltip: t('deviceCard.router'),
+      iconClass: 'text-slate-500 dark:text-slate-400',
+    }
+  }
+
+  if (type === 'enddevice') {
+    return {
+      label: t('deviceCard.endDevice'),
+      icon: 'lucide:smartphone-nfc',
+      tooltip: t('deviceCard.endDevice'),
+      iconClass: 'text-slate-500 dark:text-slate-400',
+    }
+  }
+
+  if (type === 'coordinator') {
+    return {
+      label: t('deviceCard.coordinator'),
+      icon: 'i-lucide-waypoints',
+      tooltip: t('deviceCard.coordinator'),
+      iconClass: 'text-slate-500 dark:text-slate-400',
+    }
+  }
+
+  return {
+    label: device.type,
+    icon: 'i-lucide-cpu',
+    tooltip: device.type,
+    iconClass: 'text-slate-500 dark:text-slate-400',
+  }
+}
+
 export function staleThresholdMsForDevice(device: Device) {
   const powerSource = device.power_source?.toLowerCase() ?? ''
   return powerSource.includes('mains') ? 10 * 60 * 1000 : 60 * 60 * 1000
 }
 
-export function formatLastUpdateTooltip(
-  timestamp: number,
-  now: number,
-  locale: string,
-  t: ComposerTranslation,
-) {
+export function formatLastUpdateTooltip(timestamp: number, now: number, t: ComposerTranslation) {
   const elapsedMs = now - timestamp
 
   if (elapsedMs < 60000) {
@@ -28,7 +62,7 @@ export function formatLastUpdateTooltip(
 
   if (elapsedMs >= 24 * 60 * 60 * 1000) {
     return t('deviceCard.lastUpdateAt', {
-      value: new Date(timestamp).toLocaleString(locale),
+      value: formatBrowserDateTime(timestamp),
     })
   }
 
@@ -58,16 +92,16 @@ export function formatLastSeenLabel(timestamp: number, now: number, t: ComposerT
   const minutesAgo = Math.round(elapsedMs / 60000)
 
   if (minutesAgo < 60) {
-    return `${minutesAgo}m`
+    return `${minutesAgo} ${t('deviceCard.minuteShort')}`
   }
 
   const hoursAgo = Math.round(minutesAgo / 60)
   if (hoursAgo < 24) {
-    return `${hoursAgo}h`
+    return `${hoursAgo} ${t('deviceCard.hourShort')}`
   }
 
   const daysAgo = Math.round(hoursAgo / 24)
-  return `${daysAgo}d`
+  return `${daysAgo} ${t('deviceCard.dayShort')}`
 }
 
 export function signalBadge(linkquality: unknown, t: ComposerTranslation): DeviceCardBadge | null {

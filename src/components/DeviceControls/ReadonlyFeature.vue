@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import FeatureHeader from '@/components/DeviceControls/FeatureHeader.vue'
 import { useIndicatorHistoryStore } from '@/stores/indicatorHistory'
 import type { DeviceStateValue, Expose } from '@/types/z2m'
+import { formatBrowserDateTime } from '@/utils/dateTime'
 import { featureKey, featureTitle } from '@/utils/featureMeta'
 import { buildValueTrail, formatFeatureValue } from '@/utils/featureValue'
 
@@ -157,7 +158,7 @@ watch(
               {{ formatFeatureValue(expose, row.value) }}
             </p>
             <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              {{ new Date(row.changedAt).toLocaleString() }}
+              {{ formatBrowserDateTime(row.changedAt) }}
             </p>
           </div>
 

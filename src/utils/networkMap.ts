@@ -1,4 +1,5 @@
 import type { Device, NetworkMapLink, NetworkMapNode, NetworkMapValue } from '@/types/z2m'
+import { formatBrowserDateTime } from '@/utils/dateTime'
 
 export type NetworkMapCacheEntry = {
   updatedAt: number
@@ -113,7 +114,7 @@ export function formatNetworkMapLastSeen(value: number | undefined, unknownLabel
     return unknownLabel
   }
 
-  return new Date(value).toLocaleString()
+  return formatBrowserDateTime(value)
 }
 
 export function formatNetworkAddress(value: number | undefined, unknownLabel: string) {

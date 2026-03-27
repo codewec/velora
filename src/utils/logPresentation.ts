@@ -1,4 +1,5 @@
 import type { LogEntry } from '@/stores/logs'
+import { formatBrowserDateTime } from '@/utils/dateTime'
 
 export interface ParsedTopicPayload {
   topic: string
@@ -112,7 +113,7 @@ export function rawAction(entry: LogEntry) {
 }
 
 export function rawLine(entry: LogEntry, lineNumber?: number) {
-  const line = `[${new Date(entry.time).toLocaleString()}] z2m:${rawNamespace(entry.kind)}: ${rawAction(entry)}`
+  const line = `[${formatBrowserDateTime(entry.time)}] z2m:${rawNamespace(entry.kind)}: ${rawAction(entry)}`
   return typeof lineNumber === 'number' ? `${lineNumber} ${line}` : line
 }
 

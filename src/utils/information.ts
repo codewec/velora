@@ -1,11 +1,12 @@
 import type { BridgeHealthDevice, Device } from '@/types/z2m'
+import { formatBrowserDateTime } from '@/utils/dateTime'
 
 export function formatInfoDateTime(value: number | undefined, unknownLabel: string) {
   if (!value) {
     return unknownLabel
   }
 
-  return new Date(value).toLocaleString()
+  return formatBrowserDateTime(value)
 }
 
 export function formatInfoDuration(seconds: number | undefined, unknownLabel: string) {

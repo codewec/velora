@@ -7,6 +7,7 @@ import DevicePageShell from '@/components/device/DevicePageShell.vue'
 import { useZ2M } from '@/composables/useZ2M'
 import { useBridgeStore } from '@/stores/bridge'
 import { useDevicesStore } from '@/stores/devices'
+import { formatBrowserDateTime } from '@/utils/dateTime'
 import { OUI } from '@/utils/oui'
 import { deviceImageUrl } from '@/utils/devicePresentation'
 import { createTransactionId } from '@/utils/transaction'
@@ -61,7 +62,7 @@ function formatLastSeen(timestamp: number | null) {
     return t('app.disabled')
   }
 
-  return new Date(timestamp).toLocaleString()
+  return formatBrowserDateTime(timestamp)
 }
 
 function metadataRows(device: Device) {

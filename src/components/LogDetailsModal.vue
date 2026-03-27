@@ -3,6 +3,7 @@ import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useLogDetailsStore } from '@/stores/logDetails'
+import { formatBrowserDateTime } from '@/utils/dateTime'
 import {
   parseBridgeLoggingPayload,
   parseTopicPayload,
@@ -50,7 +51,7 @@ watch(
     :title="selected?.summary || t('logsPage.title')"
     :description="
       selected
-        ? `[${new Date(selected.time).toLocaleString()}] ${selected.kind} ${selected.level}`
+        ? `[${formatBrowserDateTime(selected.time)}] ${selected.kind} ${selected.level}`
         : undefined
     "
     :ui="{ content: 'sm:max-w-4xl' }"
@@ -76,7 +77,7 @@ watch(
               {{ t('logsPage.timestamp') }}
             </p>
             <p class="mt-1 font-mono text-sm text-slate-900 dark:text-slate-100">
-              {{ new Date(selected.time).toLocaleString() }}
+              {{ formatBrowserDateTime(selected.time) }}
             </p>
           </div>
 

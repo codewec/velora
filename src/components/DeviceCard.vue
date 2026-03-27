@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { useDevicesStore } from '@/stores/devices'
 import type { Device } from '@/types/z2m'
 import {
+  deviceTypeBadge as resolveDeviceTypeBadge,
   formatLastSeenLabel,
   formatLastUpdateTooltip,
   powerBadge as resolvePowerBadge,
@@ -21,7 +22,7 @@ const props = defineProps<{
 const imageFailed = ref(false)
 const isStatusPopoverOpen = ref(false)
 const devicesStore = useDevicesStore()
-const { locale, t } = useI18n()
+const { t } = useI18n()
 const now = ref(Date.now())
 let nowTimer: ReturnType<typeof setInterval> | null = null
 
@@ -58,7 +59,7 @@ const staleTooltip = computed(() => {
     return t('deviceCard.noRecentUpdates')
   }
 
-  return formatLastUpdateTooltip(lastSeenAt.value, now.value, locale.value, t)
+  return formatLastUpdateTooltip(lastSeenAt.value, now.value, t)
 })
 
 const lastSeenLabel = computed(() => {
@@ -79,61 +80,7 @@ const powerBadge = computed(() =>
   resolvePowerBadge(props.device, props.state?.battery, props.state?.battery_low, t),
 )
 
-const deviceTypeLabel = computed(() => {
-  const type = props.device.type.toLowerCase()
-
-  if (type === 'enddevice') {
-    return t('deviceCard.endDevice')
-  }
-
-  if (type === 'router') {
-    return t('deviceCard.router')
-  }
-
-  if (type === 'coordinator') {
-    return t('deviceCard.coordinator')
-  }
-
-  return props.device.type
-})
-
-const deviceTypeBadge = computed(() => {
-  const type = props.device.type.toLowerCase()
-
-  if (type === 'router') {
-    return {
-      label: t('deviceCard.router'),
-      icon: 'lucide:router',
-      tooltip: t('deviceCard.router'),
-      iconClass: 'text-slate-500 dark:text-slate-400',
-    }
-  }
-
-  if (type === 'enddevice') {
-    return {
-      label: t('deviceCard.endDevice'),
-      icon: 'lucide:smartphone-nfc',
-      tooltip: t('deviceCard.endDevice'),
-      iconClass: 'text-slate-500 dark:text-slate-400',
-    }
-  }
-
-  if (type === 'coordinator') {
-    return {
-      label: t('deviceCard.coordinator'),
-      icon: 'i-lucide-waypoints',
-      tooltip: t('deviceCard.coordinator'),
-      iconClass: 'text-slate-500 dark:text-slate-400',
-    }
-  }
-
-  return {
-    label: deviceTypeLabel.value,
-    icon: 'i-lucide-cpu',
-    tooltip: deviceTypeLabel.value,
-    iconClass: 'text-slate-500 dark:text-slate-400',
-  }
-})
+const deviceTypeBadge = computed(() => resolveDeviceTypeBadge(props.device, t))
 
 const activity = computed(() =>
   devicesStore.deviceActivity(props.connectionId, props.device.friendly_name),

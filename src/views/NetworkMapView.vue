@@ -13,6 +13,7 @@ import ConnectionNavbarActions from '@/components/ConnectionNavbarActions.vue'
 import { useBridgeStore } from '@/stores/bridge'
 import { useDevicesStore } from '@/stores/devices'
 import type { NetworkMapValue } from '@/types/z2m'
+import { formatBrowserDateTime } from '@/utils/dateTime'
 import {
   buildNetworkMapNodes,
   clearNetworkMapCache,
@@ -49,7 +50,7 @@ const activeNetworkMap = computed(() => networkMap.value ?? cachedNetworkMap.val
 const showingCachedData = computed(() => !networkMap.value && !!cachedNetworkMap.value)
 const cachedUpdatedAtLabel = computed(() =>
   cachedNetworkMap.value?.updatedAt
-    ? new Date(cachedNetworkMap.value.updatedAt).toLocaleString()
+    ? formatBrowserDateTime(cachedNetworkMap.value.updatedAt)
     : null,
 )
 

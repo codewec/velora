@@ -2,6 +2,15 @@
 
 Alternative Zigbee2MQTT web UI built with `Vue 3`, `Vite`, `Pinia`, and `@nuxt/ui`.
 
+## UI highlights
+
+- Card and table views for the device list
+- Grouping by room name, function, type, power source, and vendor
+- Sorting by name, signal, battery, and last seen
+- Room grouping can parse names using a configurable naming pattern
+  - current default: `{room}_{type}_{placement}`
+  - example: `living-room_switch_main`
+
 ## Runtime model
 
 - The frontend supports multiple Zigbee2MQTT connections.

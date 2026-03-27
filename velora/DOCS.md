@@ -6,7 +6,7 @@ Velora is an alternative Zigbee2MQTT web UI that can run inside Home Assistant t
 
 - Home Assistant add-on ingress is enabled.
 - The add-on reuses the standalone Velora runtime image and wraps it with Home Assistant add-on metadata.
-- The add-on currently supports `amd64` only.
+- The add-on currently supports `amd64` and `aarch64`.
 
 ## Configuration
 
@@ -114,3 +114,4 @@ For Home Assistant OS or Supervised installations, the cleanest approach is:
 - All JSON options are validated during add-on startup.
 - Invalid JSON prevents the add-on from starting.
 - This add-on package assumes the standalone image is available at `ghcr.io/codewec/velora:dev` unless `VELORA_IMAGE` is overridden during the add-on build.
+- The device list supports name-based room grouping with the default naming pattern `{room}_{type}_{placement}`.

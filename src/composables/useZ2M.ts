@@ -4,6 +4,7 @@ import { getZ2MConnectionConfig, type Z2MConnectionConfig } from '@/config/z2mCo
 import { i18n } from '@/i18n'
 import { useLogsStore } from '@/stores/logs'
 import type { Z2MMessage } from '@/types/z2m'
+import { formatBrowserTime } from '@/utils/dateTime'
 
 type MessageHandler = (message: Z2MMessage) => void
 
@@ -118,7 +119,7 @@ function createClient(connectionId: string, connection: Z2MConnectionConfig): Z2
   function pushLog(level: Z2MLogEntry['level'], message: string) {
     logs.value = [
       {
-        timestamp: new Date().toLocaleTimeString(),
+        timestamp: formatBrowserTime(Date.now()),
         level,
         message,
       },

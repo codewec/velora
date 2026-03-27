@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
+import { formatBrowserTime } from '@/utils/dateTime'
 
 export type LogLevel = 'info' | 'warning' | 'error' | 'debug'
 export type LogKind = 'transport' | 'tx' | 'rx' | 'bridge' | 'device' | 'event'
@@ -31,7 +32,7 @@ export const useLogsStore = defineStore('logs', () => {
     const next: LogEntry = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
       connectionId,
-      timestamp: new Date().toLocaleTimeString(),
+      timestamp: formatBrowserTime(Date.now()),
       time: Date.now(),
       ...entry,
     }
