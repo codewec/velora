@@ -22,11 +22,26 @@ import type {
 import { useZ2M } from './useZ2M'
 
 function isDeviceStateTopic(topic: string) {
-  return !topic.startsWith('bridge/')
+  return !topic.startsWith('bridge/') && !topic.endsWith('/set')
 }
 
-function getFriendlyNameFromTopic(topic: string) {
-  return topic
+function getDeviceNameFromTopic(
+  connectionId: string,
+  topic: string,
+  devicesStore: ReturnType<typeof useDevicesStore>,
+) {
+  const normalizedTopic = topic.endsWith('/set') ? topic.slice(0, -4) : topic
+  const device = devicesStore
+    .devicesFor(connectionId)
+    .find(
+      (entry) => entry.friendly_name === normalizedTopic || entry.ieee_address === normalizedTopic,
+    )
+
+  return device?.friendly_name || normalizedTopic
+}
+
+function isDeviceCommandTopic(topic: string) {
+  return !topic.startsWith('bridge/') && topic.endsWith('/set')
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -47,6 +62,10 @@ function isBridgeLoggingMessage(value: unknown): value is BridgeLoggingMessage {
 
 function isBridgeNetworkMapResponse(value: unknown): value is BridgeNetworkMapResponse {
   return isRecord(value)
+}
+
+function isOutboundDeviceLog(message: string) {
+  return /\bto '([^']+)'/i.test(message)
 }
 
 export function useZ2MInit() {
@@ -139,6 +158,10 @@ export function useZ2MInit() {
       const raw = JSON.stringify(message.payload, null, 2)
       const parsed = parseBridgeLoggingPayload(raw)
 
+      if (parsed?.deviceName && isOutboundDeviceLog(parsed.message)) {
+        devicesStore.markDeviceBridgeTx(connectionId, parsed.deviceName)
+      }
+
       logsStore.addLog(connectionId, {
         level:
           message.payload.level === 'error'
@@ -157,8 +180,21 @@ export function useZ2MInit() {
       return
     }
 
+    if (isDeviceCommandTopic(message.topic)) {
+      const friendlyName = getDeviceNameFromTopic(connectionId, message.topic, devicesStore)
+
+      logsStore.addLog(connectionId, {
+        level: 'debug',
+        kind: 'tx',
+        summary: i18n.global.t('logsPage.sent', { topic: message.topic }),
+        raw: JSON.stringify(message.payload, null, 2),
+      })
+      devicesStore.markDeviceBridgeTx(connectionId, friendlyName)
+      return
+    }
+
     if (isDeviceStateTopic(message.topic) && isRecord(message.payload)) {
-      const friendlyName = getFriendlyNameFromTopic(message.topic)
+      const friendlyName = getDeviceNameFromTopic(connectionId, message.topic, devicesStore)
       const currentState = devicesStore.deviceStatesFor(connectionId)[friendlyName] ?? {}
 
       logsStore.addLog(connectionId, {

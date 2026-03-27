@@ -137,6 +137,7 @@ export const useDevicesStore = defineStore('devices', () => {
   function pulseActivity(connectionId: string, friendlyName: string, direction: 'rx' | 'tx') {
     const timerKey = `${connectionId}:${friendlyName}`
     const timers = direction === 'rx' ? rxTimers : txTimers
+    const durationMs = 1200
 
     setActivityFlag(connectionId, friendlyName, direction, true)
 
@@ -150,7 +151,7 @@ export const useDevicesStore = defineStore('devices', () => {
       setTimeout(() => {
         setActivityFlag(connectionId, friendlyName, direction, false)
         timers.delete(timerKey)
-      }, 700),
+      }, durationMs),
     )
   }
 
@@ -277,8 +278,17 @@ export const useDevicesStore = defineStore('devices', () => {
     pulseActivity(connectionId, friendlyName, 'rx')
   }
 
-  function markDeviceTx(connectionId: string, friendlyName: string) {
+  function markDeviceBridgeTx(connectionId: string, friendlyName: string) {
     pulseActivity(connectionId, friendlyName, 'tx')
+  }
+
+  function markDeviceTx(connectionId: string, friendlyName: string) {
+    // Frontend writes are not a reliable indicator that Zigbee2MQTT has
+    // actually started an outbound device action. We keep this method as a
+    // compatibility no-op for control components and drive TX activity from
+    // bridge/logging events instead.
+    void connectionId
+    void friendlyName
   }
 
   function deviceById(connectionId: string, id: string) {
@@ -324,6 +334,7 @@ export const useDevicesStore = defineStore('devices', () => {
     renameDevice,
     updateDeviceState,
     markDeviceRx,
+    markDeviceBridgeTx,
     markDeviceTx,
     deviceById,
     deviceWithState,
