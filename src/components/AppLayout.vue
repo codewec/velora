@@ -36,6 +36,15 @@ const links = computed<NavigationMenuItem[][]>(() => [
       },
     },
     {
+      label: t('app.events'),
+      icon: 'i-lucide-logs',
+      to: `/connections/${connectionId.value}/logs`,
+      exact: route.name === 'logs',
+      onSelect: () => {
+        open.value = false
+      },
+    },
+    {
       label: t('app.networkMap'),
       icon: 'i-lucide-git-branch-plus',
       to: `/connections/${connectionId.value}/network-map`,
@@ -49,15 +58,6 @@ const links = computed<NavigationMenuItem[][]>(() => [
       icon: 'i-lucide-info',
       to: `/connections/${connectionId.value}/information`,
       exact: route.name === 'information',
-      onSelect: () => {
-        open.value = false
-      },
-    },
-    {
-      label: t('app.events'),
-      icon: 'i-lucide-logs',
-      to: `/connections/${connectionId.value}/logs`,
-      exact: route.name === 'logs',
       onSelect: () => {
         open.value = false
       },
@@ -94,7 +94,6 @@ const links = computed<NavigationMenuItem[][]>(() => [
         <SettingsMenu :collapsed="collapsed" />
       </template>
     </UDashboardSidebar>
-
     <slot />
   </UDashboardGroup>
 </template>

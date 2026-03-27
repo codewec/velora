@@ -79,7 +79,7 @@ const tabs = computed<NavigationMenuItem[]>(() => [
 
       <UDashboardToolbar v-if="device">
         <template #left>
-          <UNavigationMenu :items="tabs" />
+          <UNavigationMenu :items="tabs" highlight class="-mx-1 flex-1" />
         </template>
 
         <template #right>

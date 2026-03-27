@@ -62,9 +62,7 @@ const chipColors: Record<string, string> = {
 
 const user = ref({
   name: '',
-  avatar: {
-    icon: 'i-lucide-settings-2',
-  },
+  icon: 'lucide:cog',
 })
 
 const localeOptions = [
@@ -73,13 +71,6 @@ const localeOptions = [
 ] as const
 
 const items = computed<DropdownMenuItem[][]>(() => [
-  [
-    {
-      type: 'label',
-      label: t('app.appearance'),
-      avatar: user.value.avatar,
-    },
-  ],
   [
     {
       label: t('app.colors'),

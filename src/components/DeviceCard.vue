@@ -1,11 +1,16 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useDevicesStore } from '@/stores/devices'
 import type { Device } from '@/types/z2m'
-
-const STALE_THRESHOLD_MAINS_MS = 10 * 60 * 1000
-const STALE_THRESHOLD_BATTERY_MS = 60 * 60 * 1000
+import {
+  formatLastSeenLabel,
+  formatLastUpdateTooltip,
+  powerBadge as resolvePowerBadge,
+  signalBadge as resolveSignalBadge,
+  staleThresholdMsForDevice,
+} from '@/utils/deviceCard'
 
 const props = defineProps<{
   connectionId: string
@@ -14,7 +19,9 @@ const props = defineProps<{
 }>()
 
 const imageFailed = ref(false)
+const isStatusPopoverOpen = ref(false)
 const devicesStore = useDevicesStore()
+const { locale, t } = useI18n()
 const now = ref(Date.now())
 let nowTimer: ReturnType<typeof setInterval> | null = null
 
@@ -26,6 +33,9 @@ const imageUrl = computed(() => {
 })
 
 const isOnline = computed(() => props.state?.availability !== 'offline')
+const onlineStatusTooltip = computed(() => {
+  return isOnline.value ? t('deviceCard.onlineTooltip') : t('deviceCard.offlineTooltip')
+})
 const lastSeenAt = computed(() =>
   devicesStore.deviceLastSeen(props.connectionId, props.device.friendly_name),
 )
@@ -33,10 +43,7 @@ const reportedLastSeenAt = computed(() =>
   devicesStore.deviceReportedLastSeen(props.connectionId, props.device.friendly_name),
 )
 
-const staleThresholdMs = computed(() => {
-  const powerSource = props.device.power_source?.toLowerCase() ?? ''
-  return powerSource.includes('mains') ? STALE_THRESHOLD_MAINS_MS : STALE_THRESHOLD_BATTERY_MS
-})
+const staleThresholdMs = computed(() => staleThresholdMsForDevice(props.device))
 
 const isStale = computed(() => {
   if (!lastSeenAt.value || !isOnline.value) {
@@ -48,11 +55,10 @@ const isStale = computed(() => {
 
 const staleTooltip = computed(() => {
   if (!lastSeenAt.value) {
-    return 'No recent device updates'
+    return t('deviceCard.noRecentUpdates')
   }
 
-  const minutesAgo = Math.max(1, Math.round((now.value - lastSeenAt.value) / 60000))
-  return `Last update ${minutesAgo} minute${minutesAgo === 1 ? '' : 's'} ago`
+  return formatLastUpdateTooltip(lastSeenAt.value, now.value, locale.value, t)
 })
 
 const lastSeenLabel = computed(() => {
@@ -60,152 +66,32 @@ const lastSeenLabel = computed(() => {
     return null
   }
 
-  const minutesAgo = Math.max(1, Math.round((now.value - reportedLastSeenAt.value) / 60000))
-
-  if (minutesAgo < 60) {
-    return `${minutesAgo}m`
-  }
-
-  const hoursAgo = Math.round(minutesAgo / 60)
-  if (hoursAgo < 24) {
-    return `${hoursAgo}h`
-  }
-
-  const daysAgo = Math.round(hoursAgo / 24)
-  return `${daysAgo}d`
+  return formatLastSeenLabel(reportedLastSeenAt.value, now.value, t)
 })
 
 const description = computed(
   () => props.device.description || props.device.definition?.description || null,
 )
 
-const signalBadge = computed(() => {
-  const linkquality = props.state?.linkquality
+const signalBadge = computed(() => resolveSignalBadge(props.state?.linkquality, t))
 
-  if (typeof linkquality !== 'number') {
-    return null
-  }
-
-  if (linkquality >= 180) {
-    return {
-      label: String(linkquality),
-      tooltip: `Signal quality: ${linkquality}`,
-      icon: 'i-lucide-signal-high',
-      iconClass: 'text-emerald-500 dark:text-emerald-400',
-    }
-  }
-
-  if (linkquality >= 120) {
-    return {
-      label: String(linkquality),
-      tooltip: `Signal quality: ${linkquality}`,
-      icon: 'i-lucide-signal-medium',
-      iconClass: 'text-sky-500 dark:text-sky-400',
-    }
-  }
-
-  if (linkquality >= 60) {
-    return {
-      label: String(linkquality),
-      tooltip: `Signal quality: ${linkquality}`,
-      icon: 'i-lucide-signal-low',
-      iconClass: 'text-amber-500 dark:text-amber-400',
-    }
-  }
-
-  return {
-    label: String(linkquality),
-    tooltip: `Signal quality: ${linkquality}`,
-    icon: 'i-lucide-signal-zero',
-    iconClass: 'text-rose-500 dark:text-rose-400',
-  }
-})
-
-const powerBadge = computed(() => {
-  const battery = props.state?.battery
-  const batteryLow = props.state?.battery_low
-  const powerSource = props.device.power_source?.toLowerCase()
-
-  if (powerSource?.includes('mains')) {
-    return {
-      label: 'Mains',
-      tooltip: 'Powered by mains',
-      icon: 'i-lucide-plug',
-      iconClass: 'text-slate-500 dark:text-slate-400',
-    }
-  }
-
-  if (typeof battery === 'number') {
-    if (battery >= 75) {
-      return {
-        label: `${battery}%`,
-        tooltip: `Battery level: ${battery}%`,
-        icon: 'i-lucide-battery-full',
-        iconClass: 'text-emerald-500 dark:text-emerald-400',
-      }
-    }
-
-    if (battery >= 40) {
-      return {
-        label: `${battery}%`,
-        tooltip: `Battery level: ${battery}%`,
-        icon: 'i-lucide-battery-medium',
-        iconClass: 'text-amber-500 dark:text-amber-400',
-      }
-    }
-
-    return {
-      label: `${battery}%`,
-      tooltip: `Battery level: ${battery}%`,
-      icon: 'i-lucide-battery-low',
-      iconClass: 'text-rose-500 dark:text-rose-400',
-    }
-  }
-
-  if (powerSource?.includes('battery')) {
-    return {
-      label: batteryLow === true ? 'Low' : 'OK',
-      tooltip: `Battery state: ${batteryLow === true ? 'low' : 'ok'}`,
-      icon: batteryLow === true ? 'i-lucide-battery-warning' : 'i-lucide-battery',
-      iconClass:
-        batteryLow === true
-          ? 'text-rose-500 dark:text-rose-400'
-          : 'text-emerald-500 dark:text-emerald-400',
-    }
-  }
-
-  if (batteryLow === true) {
-    return {
-      label: 'Low',
-      tooltip: 'Battery state: low',
-      icon: 'i-lucide-battery-warning',
-      iconClass: 'text-rose-500 dark:text-rose-400',
-    }
-  }
-
-  return props.device.power_source
-    ? {
-        label: props.device.power_source,
-        tooltip: `Power source: ${props.device.power_source}`,
-        icon: 'i-lucide-battery',
-        iconClass: 'text-slate-500 dark:text-slate-400',
-      }
-    : null
-})
+const powerBadge = computed(() =>
+  resolvePowerBadge(props.device, props.state?.battery, props.state?.battery_low, t),
+)
 
 const deviceTypeLabel = computed(() => {
   const type = props.device.type.toLowerCase()
 
   if (type === 'enddevice') {
-    return 'EndDevice'
+    return t('deviceCard.endDevice')
   }
 
   if (type === 'router') {
-    return 'Router'
+    return t('deviceCard.router')
   }
 
   if (type === 'coordinator') {
-    return 'Coordinator'
+    return t('deviceCard.coordinator')
   }
 
   return props.device.type
@@ -216,29 +102,33 @@ const deviceTypeBadge = computed(() => {
 
   if (type === 'router') {
     return {
-      icon: 'i-lucide-route',
-      tooltip: 'Router',
+      label: t('deviceCard.router'),
+      icon: 'lucide:router',
+      tooltip: t('deviceCard.router'),
       iconClass: 'text-slate-500 dark:text-slate-400',
     }
   }
 
   if (type === 'enddevice') {
     return {
-      icon: 'i-lucide-smartphone',
-      tooltip: 'EndDevice',
+      label: t('deviceCard.endDevice'),
+      icon: 'lucide:smartphone-nfc',
+      tooltip: t('deviceCard.endDevice'),
       iconClass: 'text-slate-500 dark:text-slate-400',
     }
   }
 
   if (type === 'coordinator') {
     return {
+      label: t('deviceCard.coordinator'),
       icon: 'i-lucide-waypoints',
-      tooltip: 'Coordinator',
+      tooltip: t('deviceCard.coordinator'),
       iconClass: 'text-slate-500 dark:text-slate-400',
     }
   }
 
   return {
+    label: deviceTypeLabel.value,
     icon: 'i-lucide-cpu',
     tooltip: deviceTypeLabel.value,
     iconClass: 'text-slate-500 dark:text-slate-400',
@@ -275,45 +165,63 @@ onUnmounted(() => {
     <UCard
       class="relative h-full border-slate-200/80 bg-white/80 backdrop-blur transition hover:border-emerald-400/60 hover:bg-white dark:border-white/10 dark:bg-white/5 dark:hover:border-emerald-400/50 dark:hover:bg-white/8"
       :class="isOnline ? '' : 'opacity-60 saturate-75'"
-      :ui="{ body: 'p-5 sm:p-6' }"
+      :ui="{ body: 'px-4 py-5 sm:px-5 sm:py-6' }"
     >
+      <div class="absolute left-0 top-0 z-10 flex items-center gap-1.5">
+        <UPopover v-model:open="isStatusPopoverOpen">
+          <UBadge
+            size="sm"
+            :color="isOnline ? 'success' : 'error'"
+            variant="soft"
+            @mouseenter="isStatusPopoverOpen = true"
+            @mouseleave="isStatusPopoverOpen = false"
+          >
+            {{ isOnline ? t('deviceCard.online') : t('deviceCard.offline') }}
+          </UBadge>
+
+          <template #content>
+            <div
+              class="max-w-64 p-3 text-sm text-slate-700 dark:text-slate-200"
+              @mouseenter="isStatusPopoverOpen = true"
+              @mouseleave="isStatusPopoverOpen = false"
+            >
+              {{ onlineStatusTooltip }}
+            </div>
+          </template>
+        </UPopover>
+      </div>
+
       <div
         v-if="activity.rx || activity.tx"
-        class="absolute bottom-4 right-4 z-10 flex items-center gap-1.5"
+        class="absolute bottom-0 right-0 z-10 flex items-center gap-1.5"
       >
-        <UBadge v-if="activity.rx" color="info" variant="soft" class="animate-pulse"> RX </UBadge>
-        <UBadge v-if="activity.tx" color="warning" variant="soft" class="animate-pulse">
+        <UBadge v-if="activity.rx" size="sm" color="info" variant="soft" class="animate-pulse">
+          RX
+        </UBadge>
+        <UBadge v-if="activity.tx" size="sm" color="warning" variant="soft" class="animate-pulse">
           TX
         </UBadge>
       </div>
 
       <div
         v-if="isStale || lastSeenLabel"
-        class="absolute right-4 top-4 z-10 flex items-center gap-1.5"
+        class="absolute right-0 top-0 z-10 flex items-center gap-1.5"
       >
         <UTooltip v-if="lastSeenLabel" :delay-duration="0" :text="staleTooltip">
-          <UBadge color="neutral" variant="soft">
+          <UBadge color="neutral" variant="soft" size="sm">
             {{ lastSeenLabel }}
           </UBadge>
         </UTooltip>
 
         <UTooltip v-if="isStale" :delay-duration="0" :text="staleTooltip">
-          <UBadge color="warning" variant="soft"> Stale </UBadge>
+          <UBadge color="warning" variant="soft" size="sm"> {{ t('deviceCard.stale') }} </UBadge>
         </UTooltip>
       </div>
 
-      <div class="flex items-start gap-4">
+      <div class="flex items-center gap-4">
         <div class="relative shrink-0">
-          <UChip
-            :color="isOnline ? 'success' : 'error'"
-            size="3xl"
-            inset
-            standalone
-            class="absolute -right-0.5 -top-0.5 z-10"
-          />
-
           <div
-            class="flex h-18 w-18 items-center justify-center overflow-hidden rounded-2xl bg-slate-100 ring ring-slate-200 dark:bg-slate-900/80 dark:ring-white/10"
+            class="flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl bg-slate-100 ring ring-slate-200 dark:bg-slate-900/80 dark:ring-white/10"
           >
             <div
               v-if="isInterviewing"
@@ -380,7 +288,9 @@ onUnmounted(() => {
                 color="neutral"
                 variant="subtle"
                 :ui="{ leadingIcon: deviceTypeBadge.iconClass }"
-              />
+              >
+                {{ deviceTypeBadge.label }}
+              </UBadge>
             </UTooltip>
           </div>
         </div>

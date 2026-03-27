@@ -17,9 +17,7 @@ const connections = ref(
   getZ2MConnectionConfigs().map((connection) => ({
     label: connection.label,
     id: connection.id,
-    avatar: {
-      icon: 'i-lucide-radio-tower',
-    },
+    icon: 'lucide:radio',
   })),
 )
 
@@ -69,6 +67,7 @@ const items = computed<DropdownMenuItem[][]>(() => {
 
 <template>
   <UDropdownMenu
+    v-if="items.length > 1"
     :items="items"
     :content="{ align: 'center', collisionPadding: 12 }"
     :ui="{ content: collapsed ? 'w-48' : 'w-(--reka-dropdown-menu-trigger-width)' }"
@@ -90,4 +89,17 @@ const items = computed<DropdownMenuItem[][]>(() => {
       }"
     />
   </UDropdownMenu>
+  <UButton
+    v-else
+    v-bind="{
+      ...selectedConnection,
+      label: collapsed ? undefined : selectedConnection?.label,
+    }"
+    color="neutral"
+    variant="ghost"
+    block
+    :square="collapsed"
+    class="data-[state=open]:bg-elevated"
+    :class="[!collapsed && 'py-2']"
+  />
 </template>

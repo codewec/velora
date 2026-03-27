@@ -12,25 +12,35 @@ import {
 import ConnectionNavbarActions from '@/components/ConnectionNavbarActions.vue'
 import { useBridgeStore } from '@/stores/bridge'
 import { useDevicesStore } from '@/stores/devices'
-import type { NetworkMapLink, NetworkMapNode, NetworkMapValue } from '@/types/z2m'
+import type { NetworkMapValue } from '@/types/z2m'
+import {
+  buildNetworkMapNodes,
+  clearNetworkMapCache,
+  createSeedLayouts,
+  edgeStroke,
+  formatLinkLabel,
+  formatNetworkAddress,
+  formatNetworkMapLastSeen,
+  formatNodeName,
+  loadNetworkMapCache,
+  nodeFill,
+  persistNetworkMapCache,
+  roleColor,
+  sortNetworkMapLinks,
+  type NetworkMapCacheEntry,
+} from '@/utils/networkMap'
 
 const props = defineProps<{
   connectionId: string
 }>()
 
-type NetworkMapCacheEntry = {
-  updatedAt: number
-  value: NetworkMapValue
-}
-
 const bridgeStore = useBridgeStore()
 const devicesStore = useDevicesStore()
 const { t } = useI18n()
 const router = useRouter()
-const toast = useToast()
-let cachedToastTimer: ReturnType<typeof setTimeout> | null = null
 const cachedNetworkMap = ref<NetworkMapCacheEntry | null>(null)
 const isNodeModalOpen = ref(false)
+const isScanConfirmOpen = ref(false)
 const selectedNodeIeee = ref<string | null>(null)
 const networkMap = computed(() => bridgeStore.networkMap(props.connectionId))
 const loading = computed(() => bridgeStore.networkMapLoading(props.connectionId))
@@ -44,36 +54,10 @@ const cachedUpdatedAtLabel = computed(() =>
 )
 
 const inventoryDevices = computed(() => devicesStore.devicesFor(props.connectionId))
-const nodes = computed(() => {
-  const mapNodes = activeNetworkMap.value?.nodes ?? []
-  const knownNodes = new Map(mapNodes.map((node) => [node.ieeeAddr, node]))
-
-  // Zigbee2MQTT raw network maps do not always include isolated devices.
-  // To keep the graph useful, we enrich the topology with the device inventory
-  // and render missing devices as standalone nodes with zero links.
-  for (const device of inventoryDevices.value) {
-    if (knownNodes.has(device.ieee_address)) {
-      continue
-    }
-
-    knownNodes.set(device.ieee_address, {
-      ieeeAddr: device.ieee_address,
-      friendlyName: device.friendly_name,
-      type: device.type,
-      networkAddress: device.network_address,
-      isolated: true,
-    })
-  }
-
-  return [...knownNodes.values()].sort((a, b) => a.friendlyName.localeCompare(b.friendlyName))
-})
-const links = computed(() =>
-  [...(activeNetworkMap.value?.links ?? [])].sort((a, b) => {
-    const left = `${a.source.ieeeAddr}-${a.target.ieeeAddr}`
-    const right = `${b.source.ieeeAddr}-${b.target.ieeeAddr}`
-    return left.localeCompare(right)
-  }),
+const nodes = computed(() =>
+  buildNetworkMapNodes(activeNetworkMap.value?.nodes, inventoryDevices.value),
 )
+const links = computed(() => sortNetworkMapLinks(activeNetworkMap.value?.links))
 
 const nodeByIeee = computed(() =>
   Object.fromEntries(nodes.value.map((node) => [node.ieeeAddr, node])),
@@ -112,80 +96,6 @@ const selectedNodeLinks = computed(() => {
   )
 })
 
-function roleColor(type: string) {
-  if (type === 'Coordinator') {
-    return 'error'
-  }
-
-  if (type === 'Router') {
-    return 'primary'
-  }
-
-  return 'neutral'
-}
-
-function formatNodeName(node: NetworkMapNode | null, fallbackIeee: string) {
-  if (!node) {
-    return fallbackIeee
-  }
-
-  return node.friendlyName || node.ieeeAddr
-}
-
-function formatLastSeen(value: number | undefined) {
-  if (!value) {
-    return t('app.unknown')
-  }
-
-  return new Date(value).toLocaleString()
-}
-
-function formatNetworkAddress(value: number | undefined) {
-  if (typeof value !== 'number') {
-    return t('app.unknown')
-  }
-
-  return `0x${value.toString(16).toUpperCase()}`
-}
-
-function formatLinkLabel(link: NetworkMapLink) {
-  const lqi = typeof link.linkquality === 'number' ? `LQI ${link.linkquality}` : 'LQI ?'
-  const routes = link.routes?.length ? ` · ${link.routes.length} routes` : ''
-  return `${lqi}${routes}`
-}
-
-function nodeFill(type: string) {
-  if (type === 'Coordinator') {
-    return '#f43f5e'
-  }
-
-  if (type === 'Router') {
-    return '#0ea5e9'
-  }
-
-  return '#94a3b8'
-}
-
-function edgeStroke(linkquality?: number) {
-  if (typeof linkquality !== 'number') {
-    return '#94a3b8'
-  }
-
-  if (linkquality >= 200) {
-    return '#10b981'
-  }
-
-  if (linkquality >= 120) {
-    return '#0ea5e9'
-  }
-
-  if (linkquality >= 60) {
-    return '#f59e0b'
-  }
-
-  return '#f43f5e'
-}
-
 function handleNodeClick({ node }: { node: string }) {
   selectedNodeIeee.value = node
   isNodeModalOpen.value = true
@@ -200,69 +110,17 @@ function openSelectedDevicePage() {
   void router.push(`/connections/${props.connectionId}/devices/${selectedNodeIeee.value}/exposes`)
 }
 
-function cacheKey(connectionId: string) {
-  return `velora:network-map:${connectionId}`
-}
-
 function loadCachedNetworkMap() {
-  if (typeof window === 'undefined') {
-    return
-  }
-
-  const raw = window.localStorage.getItem(cacheKey(props.connectionId))
-  if (!raw) {
-    return
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as NetworkMapCacheEntry
-    if (!parsed || typeof parsed.updatedAt !== 'number' || !parsed.value) {
-      return
-    }
-
-    cachedNetworkMap.value = parsed
-  } catch {
-    window.localStorage.removeItem(cacheKey(props.connectionId))
-  }
+  cachedNetworkMap.value = loadNetworkMapCache(props.connectionId)
 }
 
 function persistNetworkMap(value: NetworkMapValue) {
-  if (typeof window === 'undefined') {
-    return
-  }
-
-  const entry: NetworkMapCacheEntry = {
-    updatedAt: Date.now(),
-    value,
-  }
-
-  cachedNetworkMap.value = entry
-  window.localStorage.setItem(cacheKey(props.connectionId), JSON.stringify(entry))
+  cachedNetworkMap.value = persistNetworkMapCache(props.connectionId, value)
 }
 
 function clearCachedNetworkMap() {
-  if (typeof window === 'undefined') {
-    return
-  }
-
   cachedNetworkMap.value = null
-  window.localStorage.removeItem(cacheKey(props.connectionId))
-}
-
-function createSeedLayouts(nodesToPlace: NetworkMapNode[]) {
-  const coordinator = nodesToPlace.find((node) => node.type === 'Coordinator')
-
-  return {
-    nodes: coordinator
-      ? {
-          [coordinator.ieeeAddr]: {
-            x: 0,
-            y: 0,
-            fixed: true,
-          },
-        }
-      : {},
-  }
+  clearNetworkMapCache(props.connectionId)
 }
 
 const graphNodes = computed(() =>
@@ -408,6 +266,7 @@ const graphConfigs = reactive(
 )
 
 function triggerScan() {
+  isScanConfirmOpen.value = false
   bridgeStore.requestNetworkMap(props.connectionId)
 }
 
@@ -423,58 +282,6 @@ watch(
     }
 
     persistNetworkMap(value)
-  },
-  { immediate: true },
-)
-
-watch(
-  [showingCachedData, cachedUpdatedAtLabel],
-  ([isShowingCachedData, updatedAtLabel]) => {
-    const id = `network-map-cache:${props.connectionId}`
-
-    if (cachedToastTimer) {
-      clearTimeout(cachedToastTimer)
-      cachedToastTimer = null
-    }
-
-    if (!isShowingCachedData || !updatedAtLabel) {
-      toast.remove(id)
-      return
-    }
-
-    cachedToastTimer = setTimeout(() => {
-      if (!showingCachedData.value || !cachedUpdatedAtLabel.value) {
-        return
-      }
-
-      toast.add({
-        id,
-        title: t('networkMapPage.cachedTitle'),
-        description: t('networkMapPage.cachedDescription', { date: cachedUpdatedAtLabel.value }),
-        color: 'warning',
-        duration: 0,
-        close: false,
-        actions: [
-          {
-            label: t('networkMapPage.scan'),
-            color: 'warning',
-            variant: 'outline',
-            onClick: () => {
-              triggerScan()
-            },
-          },
-          {
-            label: t('app.clear'),
-            color: 'neutral',
-            variant: 'outline',
-            onClick: () => {
-              clearCachedNetworkMap()
-              toast.remove(id)
-            },
-          },
-        ],
-      })
-    }, 350)
   },
   { immediate: true },
 )
@@ -511,24 +318,14 @@ const graphEventHandlers: vNG.EventHandlers = {
       </UDashboardNavbar>
 
       <UDashboardToolbar>
-        <template #left>
-          <div class="flex items-center gap-3">
-            <UBadge color="neutral" variant="subtle">{{
-              t('networkMapPage.nodes', { count: nodes.length })
-            }}</UBadge>
-            <UBadge color="neutral" variant="subtle">{{
-              t('networkMapPage.links', { count: links.length })
-            }}</UBadge>
-          </div>
-        </template>
-
         <template #right>
           <UButton
-            icon="i-lucide-scan-search"
+            size="sm"
+            icon="lucide:scan-search"
             color="neutral"
             :loading="loading"
             :label="t('networkMapPage.scan')"
-            @click="triggerScan"
+            @click="isScanConfirmOpen = true"
           />
         </template>
       </UDashboardToolbar>
@@ -537,11 +334,32 @@ const graphEventHandlers: vNG.EventHandlers = {
     <template #body>
       <div class="space-y-6">
         <UAlert
+          v-if="showingCachedData && cachedUpdatedAtLabel"
           color="warning"
           variant="subtle"
-          :title="t('networkMapPage.warningTitle')"
-          :description="t('networkMapPage.warningDescription')"
-        />
+          :title="t('networkMapPage.cachedTitle')"
+          :description="t('networkMapPage.cachedDescription', { date: cachedUpdatedAtLabel })"
+        >
+          <template #actions>
+            <div class="flex flex-wrap gap-2">
+              <UButton
+                size="sm"
+                color="warning"
+                variant="outline"
+                :loading="loading"
+                :label="t('networkMapPage.scan')"
+                @click="isScanConfirmOpen = true"
+              />
+              <UButton
+                size="sm"
+                color="neutral"
+                variant="outline"
+                :label="t('app.clear')"
+                @click="clearCachedNetworkMap"
+              />
+            </div>
+          </template>
+        </UAlert>
 
         <UAlert
           v-if="error"
@@ -560,83 +378,12 @@ const graphEventHandlers: vNG.EventHandlers = {
         />
 
         <div v-if="activeNetworkMap" class="space-y-6">
-          <UCard class="border-default bg-default/70" :ui="{ body: 'p-3 sm:p-4' }">
-            <div class="mb-4 flex flex-wrap items-center gap-2">
-              <UBadge color="error" variant="soft"
-                >{{ t('networkMapPage.coordinators') }}: {{ coordinators.length }}</UBadge
-              >
-              <UBadge color="primary" variant="soft"
-                >{{ t('networkMapPage.routers') }}: {{ routers.length }}</UBadge
-              >
-              <UBadge color="neutral" variant="soft"
-                >{{ t('networkMapPage.endDevices') }}: {{ endDevices.length }}</UBadge
-              >
-            </div>
-
-            <vNG.VNetworkGraph
-              ref="graphRef"
-              v-model:layouts="graphLayouts"
-              :nodes="graphNodes"
-              :edges="graphEdges"
-              :configs="graphConfigs"
-              :event-handlers="graphEventHandlers"
-              class="h-[60vh] min-h-[420px] w-full rounded-3xl border border-default bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.08),transparent_38%),linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.82))] dark:bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.14),transparent_38%),linear-gradient(180deg,rgba(15,23,42,0.72),rgba(15,23,42,0.46))]"
-            >
-              <template #edge-label="{ edge, area, config, hovered, selected, scale }">
-                <vNG.VEdgeLabel
-                  :edge="edge"
-                  :area="area"
-                  :config="config"
-                  :hovered="hovered"
-                  :selected="selected"
-                  :scale="scale"
-                  :text="typeof edge.linkquality === 'number' ? `LQI ${edge.linkquality}` : 'LQI ?'"
-                />
-              </template>
-
-              <template
-                #override-node-label="{
-                  nodeId,
-                  scale,
-                  text,
-                  x,
-                  y,
-                  config,
-                  textAnchor,
-                  dominantBaseline,
-                }"
-              >
-                <vNG.VLabelText
-                  :text="text"
-                  :x="x"
-                  :y="y"
-                  :config="config"
-                  :scale="scale"
-                  :text-anchor="textAnchor"
-                  :dominant-baseline="dominantBaseline"
-                />
-
-                <text
-                  :x="x"
-                  :y="y + 12 * scale"
-                  :text-anchor="textAnchor"
-                  dominant-baseline="hanging"
-                  :font-size="10 * scale"
-                  fill="#64748b"
-                >
-                  {{
-                    nodeByIeee[nodeId]?.isolated
-                      ? t('networkMapPage.isolated')
-                      : (nodeByIeee[nodeId]?.type ?? '')
-                  }}
-                </text>
-              </template>
-            </vNG.VNetworkGraph>
-          </UCard>
-
           <div class="grid gap-4 xl:grid-cols-3">
             <UCard class="border-default bg-default/70" :ui="{ body: 'p-4' }">
-              <p class="text-sm text-muted">{{ t('networkMapPage.coordinators') }}</p>
+              <div class="flex row-flex justify-between w-full">
+                <p class="text-sm text-muted">{{ t('networkMapPage.coordinators') }}</p>
+                <UBadge color="neutral" size="sm" variant="soft">{{ coordinators.length }}</UBadge>
+              </div>
               <div class="mt-3 space-y-2">
                 <div
                   v-for="node in coordinators"
@@ -650,7 +397,10 @@ const graphEventHandlers: vNG.EventHandlers = {
             </UCard>
 
             <UCard class="border-default bg-default/70" :ui="{ body: 'p-4' }">
-              <p class="text-sm text-muted">{{ t('networkMapPage.routers') }}</p>
+              <div class="flex row-flex justify-between w-full">
+                <p class="text-sm text-muted">{{ t('networkMapPage.routers') }}</p>
+                <UBadge color="neutral" size="sm" variant="soft">{{ routers.length }}</UBadge>
+              </div>
               <div class="mt-3 flex flex-wrap gap-2">
                 <UBadge v-for="node in routers" :key="node.ieeeAddr" color="primary" variant="soft">
                   {{ node.friendlyName }}
@@ -659,7 +409,10 @@ const graphEventHandlers: vNG.EventHandlers = {
             </UCard>
 
             <UCard class="border-default bg-default/70" :ui="{ body: 'p-4' }">
-              <p class="text-sm text-muted">{{ t('networkMapPage.endDevices') }}</p>
+              <div class="flex row-flex justify-between w-full">
+                <p class="text-sm text-muted">{{ t('networkMapPage.endDevices') }}</p>
+                <UBadge color="neutral" size="sm" variant="soft">{{ endDevices.length }}</UBadge>
+              </div>
               <div class="mt-3 flex flex-wrap gap-2">
                 <UBadge
                   v-for="node in endDevices"
@@ -672,6 +425,65 @@ const graphEventHandlers: vNG.EventHandlers = {
               </div>
             </UCard>
           </div>
+          <vNG.VNetworkGraph
+            ref="graphRef"
+            v-model:layouts="graphLayouts"
+            :nodes="graphNodes"
+            :edges="graphEdges"
+            :configs="graphConfigs"
+            :event-handlers="graphEventHandlers"
+            class="h-[60vh] min-h-[420px] w-full rounded-3xl border border-default bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.08),transparent_38%),linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.82))] dark:bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.14),transparent_38%),linear-gradient(180deg,rgba(15,23,42,0.72),rgba(15,23,42,0.46))]"
+          >
+            <template #edge-label="{ edge, area, config, hovered, selected, scale }">
+              <vNG.VEdgeLabel
+                :edge="edge"
+                :area="area"
+                :config="config"
+                :hovered="hovered"
+                :selected="selected"
+                :scale="scale"
+                :text="typeof edge.linkquality === 'number' ? `LQI ${edge.linkquality}` : 'LQI ?'"
+              />
+            </template>
+
+            <template
+              #override-node-label="{
+                nodeId,
+                scale,
+                text,
+                x,
+                y,
+                config,
+                textAnchor,
+                dominantBaseline,
+              }"
+            >
+              <vNG.VLabelText
+                :text="text"
+                :x="x"
+                :y="y"
+                :config="config"
+                :scale="scale"
+                :text-anchor="textAnchor"
+                :dominant-baseline="dominantBaseline"
+              />
+
+              <text
+                :x="x"
+                :y="y + 12 * scale"
+                :text-anchor="textAnchor"
+                dominant-baseline="hanging"
+                :font-size="10 * scale"
+                fill="#64748b"
+              >
+                {{
+                  nodeByIeee[nodeId]?.isolated
+                    ? t('networkMapPage.isolated')
+                    : (nodeByIeee[nodeId]?.type ?? '')
+                }}
+              </text>
+            </template>
+          </vNG.VNetworkGraph>
 
           <UCard class="border-default bg-default/70" :ui="{ body: 'p-4' }">
             <p class="text-sm text-muted">{{ t('networkMapPage.connections') }}</p>
@@ -711,6 +523,37 @@ const graphEventHandlers: vNG.EventHandlers = {
       </div>
 
       <UModal
+        v-model:open="isScanConfirmOpen"
+        :title="t('networkMapPage.warningTitle')"
+        :ui="{ content: 'sm:max-w-lg' }"
+      >
+        <template #body>
+          <p class="text-sm text-muted">
+            {{ t('networkMapPage.warningDescription') }}
+          </p>
+          <p class="text-sm text-muted">
+            {{ t('networkMapPage.warningDuration') }}
+          </p>
+        </template>
+
+        <template #footer>
+          <div class="flex w-full justify-end gap-3">
+            <UButton color="neutral" variant="ghost" @click="isScanConfirmOpen = false">
+              {{ t('app.cancel') }}
+            </UButton>
+            <UButton
+              icon="i-lucide-scan-search"
+              color="warning"
+              :loading="loading"
+              @click="triggerScan"
+            >
+              {{ t('networkMapPage.scan') }}
+            </UButton>
+          </div>
+        </template>
+      </UModal>
+
+      <UModal
         v-model:open="isNodeModalOpen"
         :title="selectedNode?.friendlyName || t('app.networkMap')"
         :description="selectedNode?.type"
@@ -732,7 +575,7 @@ const graphEventHandlers: vNG.EventHandlers = {
                   {{ t('deviceInfo.networkAddress') }}
                 </p>
                 <p class="mt-1 font-mono text-sm text-slate-900 dark:text-slate-100">
-                  {{ formatNetworkAddress(selectedNode.networkAddress) }}
+                  {{ formatNetworkAddress(selectedNode.networkAddress, t('app.unknown')) }}
                 </p>
               </div>
 
@@ -765,7 +608,7 @@ const graphEventHandlers: vNG.EventHandlers = {
                   {{ t('networkMapPage.lastSeen') }}
                 </p>
                 <p class="mt-1 text-sm text-slate-900 dark:text-slate-100">
-                  {{ formatLastSeen(selectedNode.lastSeen) }}
+                  {{ formatNetworkMapLastSeen(selectedNode.lastSeen, t('app.unknown')) }}
                 </p>
               </div>
 
