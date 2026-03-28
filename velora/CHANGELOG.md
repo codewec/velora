@@ -1,6 +1,18 @@
 # Changelog
 
 
+## v0.0.6
+
+[compare changes](https://github.com/codewec/velora/compare/v0.0.5...v0.0.6)
+
+### 🩹 Fixes
+
+- Ha addon config ([399f0a3](https://github.com/codewec/velora/commit/399f0a3))
+
+### ❤️ Contributors
+
+- Codewec
+
 ## v0.0.5
 
 [compare changes](https://github.com/codewec/velora/compare/v0.0.4...v0.0.5)
