@@ -51,6 +51,12 @@ export const useBridgeStore = defineStore('bridge', () => {
   const permitJoinTargetByConnection = ref<Record<string, string>>({})
   const activeSessionsByConnection = ref<Record<string, InterviewSession[]>>({})
   const completedSessionsByConnection = ref<Record<string, InterviewSession[]>>({})
+  const pendingInterviewRequestsByConnection = ref<
+    Record<
+      string,
+      Record<string, { ieeeAddress: string; friendlyName: string; requestedAt: number }>
+    >
+  >({})
   const networkMapByConnection = ref<Record<string, NetworkMapValue | null>>({})
   const networkMapLoadingByConnection = ref<Record<string, boolean>>({})
   const networkMapErrorByConnection = ref<Record<string, string | null>>({})
@@ -88,6 +94,49 @@ export const useBridgeStore = defineStore('bridge', () => {
 
   function completedSessions(connectionId: string) {
     return completedSessionsByConnection.value[connectionId] ?? []
+  }
+
+  function pendingInterviewRequests(connectionId: string) {
+    return pendingInterviewRequestsByConnection.value[connectionId] ?? {}
+  }
+
+  function interviewSessionState(connectionId: string, ieeeAddress: string) {
+    const pending = pendingInterviewRequests(connectionId)[ieeeAddress]
+
+    if (pending) {
+      return {
+        ieeeAddress,
+        friendlyName: pending.friendlyName,
+        status: 'requested' as const,
+        error: undefined,
+      }
+    }
+
+    const active = activeSessions(connectionId).find((item) => item.ieeeAddress === ieeeAddress)
+
+    if (active) {
+      return {
+        ieeeAddress,
+        friendlyName: active.friendlyName,
+        status: active.status,
+        error: active.error,
+      }
+    }
+
+    const completed = completedSessions(connectionId).find(
+      (item) => item.ieeeAddress === ieeeAddress,
+    )
+
+    if (completed) {
+      return {
+        ieeeAddress,
+        friendlyName: completed.friendlyName,
+        status: completed.status,
+        error: completed.error,
+      }
+    }
+
+    return null
   }
 
   function networkMap(connectionId: string) {
@@ -238,10 +287,16 @@ export const useBridgeStore = defineStore('bridge', () => {
       event.type === 'device_joined'
         ? 'joined'
         : normalizeInterviewStatus('status' in event.data ? event.data.status : undefined)
+    const existingSession =
+      activeSessions(connectionId).find((item) => item.ieeeAddress === event.data?.ieee_address) ??
+      completedSessions(connectionId).find(
+        (item) => item.ieeeAddress === event.data?.ieee_address,
+      ) ??
+      pendingInterviewRequests(connectionId)[event.data.ieee_address]
     const friendlyName =
       typeof event.data.friendly_name === 'string'
         ? event.data.friendly_name
-        : event.data.ieee_address
+        : existingSession?.friendlyName || event.data.ieee_address
     const error = typeof event.data.error === 'string' ? event.data.error : undefined
     const session: InterviewSession = {
       ieeeAddress: event.data.ieee_address,
@@ -250,6 +305,13 @@ export const useBridgeStore = defineStore('bridge', () => {
       startedAt: Date.now(),
       error,
       finishedAt: status === 'successful' || status === 'failed' ? Date.now() : undefined,
+    }
+
+    const nextPending = { ...pendingInterviewRequests(connectionId) }
+    delete nextPending[session.ieeeAddress]
+    pendingInterviewRequestsByConnection.value = {
+      ...pendingInterviewRequestsByConnection.value,
+      [connectionId]: nextPending,
     }
 
     if (status === 'successful' || status === 'failed') {
@@ -306,6 +368,24 @@ export const useBridgeStore = defineStore('bridge', () => {
     })
   }
 
+  function registerInterviewRequest(
+    connectionId: string,
+    ieeeAddress: string,
+    friendlyName: string,
+  ) {
+    pendingInterviewRequestsByConnection.value = {
+      ...pendingInterviewRequestsByConnection.value,
+      [connectionId]: {
+        ...pendingInterviewRequests(connectionId),
+        [ieeeAddress]: {
+          ieeeAddress,
+          friendlyName,
+          requestedAt: Date.now(),
+        },
+      },
+    }
+  }
+
   function tickTimeout(connectionId: string) {
     if (permitJoinTimeout(connectionId) <= 0) {
       permitJoinByConnection.value = {
@@ -341,6 +421,7 @@ export const useBridgeStore = defineStore('bridge', () => {
     permitJoinTargetByConnection,
     activeSessionsByConnection,
     completedSessionsByConnection,
+    pendingInterviewRequestsByConnection,
     networkMapByConnection,
     networkMapLoadingByConnection,
     networkMapErrorByConnection,
@@ -352,6 +433,8 @@ export const useBridgeStore = defineStore('bridge', () => {
     permitJoinTarget,
     activeSessions,
     completedSessions,
+    pendingInterviewRequests,
+    interviewSessionState,
     lastCompletedSessions,
     networkMap,
     networkMapLoading,
@@ -364,6 +447,7 @@ export const useBridgeStore = defineStore('bridge', () => {
     handleEvent,
     setPermitJoinTarget,
     setPermitJoin,
+    registerInterviewRequest,
     tickTimeout,
   }
 })

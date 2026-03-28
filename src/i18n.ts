@@ -124,6 +124,7 @@ export const messages = {
       via: 'Via {target} · {timeout}',
     },
     interview: {
+      requested: 'Interview requested',
       started: 'Interview started',
       completed: 'Interview completed successfully',
       failed: 'Interview failed',
@@ -534,6 +535,7 @@ export const messages = {
       via: 'Через {target} · {timeout}',
     },
     interview: {
+      requested: 'Интервью запрошено',
       started: 'Интервью начато',
       completed: 'Интервью успешно завершено',
       failed: 'Интервью завершилось ошибкой',

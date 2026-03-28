@@ -1,144 +1,190 @@
-import { onUnmounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useBridgeStore } from '@/stores/bridge'
+import { useDevicesStore } from '@/stores/devices'
 import type { InterviewSession } from '@/types/z2m'
 
-function toastColor(status: InterviewSession['status']) {
+type InterviewToastStatus = InterviewSession['status'] | 'requested'
+
+const INTERVIEW_TOAST_DURATION_MS = 6000
+
+function toastStatusIcon(status: InterviewToastStatus) {
   switch (status) {
+    case 'requested':
+      return 'i-lucide-send'
+    case 'joined':
+      return 'i-lucide-plug-zap'
+    case 'interview_started':
+      return 'i-lucide-scan-search'
     case 'successful':
-      return 'success' as const
+      return 'i-lucide-badge-check'
     case 'failed':
-      return 'error' as const
-    default:
-      return 'warning' as const
+      return 'i-lucide-triangle-alert'
   }
 }
 
-function toastDescription(session: InterviewSession, t: ReturnType<typeof useI18n>['t']) {
-  switch (session.status) {
+function toastStatusColor(status: InterviewToastStatus) {
+  switch (status) {
+    case 'failed':
+      return 'error' as const
+    case 'successful':
+      return 'success' as const
+    case 'requested':
+    case 'joined':
+    case 'interview_started':
+      return 'neutral' as const
+  }
+}
+
+function toastStatusDescription(
+  t: ReturnType<typeof useI18n>['t'],
+  status: InterviewToastStatus,
+  error?: string,
+) {
+  switch (status) {
+    case 'requested':
+      return t('interview.requested')
+    case 'joined':
+      return t('interview.joined')
     case 'interview_started':
       return t('interview.started')
     case 'successful':
       return t('interview.completed')
     case 'failed':
-      return session.error || t('interview.failed')
-    default:
-      return t('interview.joined')
+      return error || t('interview.failed')
   }
 }
 
 export function useInterviewToasts() {
   const toast = useToast()
-  const router = useRouter()
   const { t } = useI18n()
   const bridgeStore = useBridgeStore()
-  const statusBySession = new Map<string, InterviewSession['status']>()
-  const removeTimers = new Map<string, ReturnType<typeof setTimeout>>()
+  const devicesStore = useDevicesStore()
+  const lastStatusBySession = new Map<string, InterviewToastStatus>()
+  let initialized = false
 
-  function upsertToast(connectionId: string, session: InterviewSession) {
-    const id = `interview:${connectionId}:${session.ieeeAddress}`
-    const finished = session.status === 'successful' || session.status === 'failed'
-    const actions: Array<{
-      label: string
-      color: 'neutral' | 'error'
-      variant: 'outline'
-      onClick: () => void
-    }> = [
-      {
-        label: t('interview.openDevice'),
-        color: 'neutral' as const,
-        variant: 'outline' as const,
-        onClick: () => {
-          router.push(`/connections/${connectionId}/devices/${session.ieeeAddress}`)
-        },
-      },
-    ]
+  const interviewState = computed(() => {
+    const connectionIds = new Set([
+      ...Object.keys(bridgeStore.pendingInterviewRequestsByConnection),
+      ...Object.keys(bridgeStore.activeSessionsByConnection),
+      ...Object.keys(bridgeStore.completedSessionsByConnection),
+    ])
 
-    if (finished && bridgeStore.permitJoin(connectionId)) {
-      actions.push({
-        label: t('interview.stopPairing'),
-        color: 'error' as const,
-        variant: 'outline' as const,
-        onClick: () => {
-          bridgeStore.setPermitJoin(
-            connectionId,
-            false,
-            0,
-            bridgeStore.permitJoinTarget(connectionId),
-          )
-        },
-      })
+    return [...connectionIds].sort().map((connectionId) => ({
+      connectionId,
+      pending: Object.values(bridgeStore.pendingInterviewRequests(connectionId)),
+      active: bridgeStore.activeSessions(connectionId),
+      completed: bridgeStore.completedSessions(connectionId),
+    }))
+  })
+
+  function sessionKey(connectionId: string, ieeeAddress: string) {
+    return `${connectionId}:${ieeeAddress}`
+  }
+
+  function interviewDeviceLabel(connectionId: string, ieeeAddress: string, fallbackName: string) {
+    const device = devicesStore
+      .devicesFor(connectionId)
+      .find((entry) => entry.ieee_address === ieeeAddress)
+
+    if (!device) {
+      return fallbackName
     }
 
-    const payload = {
-      id,
-      title: session.friendlyName,
-      description: toastDescription(session, t),
-      color: toastColor(session.status),
-      duration: finished ? 5000 : 0,
-      close: false,
-      progress: finished,
-      actions,
-    }
+    return device.description || device.friendly_name
+  }
 
-    if (statusBySession.has(id)) {
-      toast.update(id, payload)
-    } else {
-      toast.add(payload)
-    }
-
-    statusBySession.set(id, session.status)
-
-    const currentTimer = removeTimers.get(id)
-    if (currentTimer) {
-      clearTimeout(currentTimer)
-      removeTimers.delete(id)
-    }
-
-    if (finished) {
-      const timer = setTimeout(() => {
-        toast.remove(id)
-        removeTimers.delete(id)
-        statusBySession.delete(id)
-      }, 5200)
-
-      removeTimers.set(id, timer)
-    }
+  function addInterviewToast(
+    connectionId: string,
+    ieeeAddress: string,
+    fallbackName: string,
+    status: InterviewToastStatus,
+    error?: string,
+  ) {
+    toast.add({
+      title: interviewDeviceLabel(connectionId, ieeeAddress, fallbackName),
+      description: toastStatusDescription(t, status, error),
+      icon: toastStatusIcon(status),
+      color: toastStatusColor(status),
+      duration: INTERVIEW_TOAST_DURATION_MS,
+      progress: true,
+      close: true,
+    })
   }
 
   watch(
-    () => ({
-      active: bridgeStore.activeSessionsByConnection,
-      completed: bridgeStore.completedSessionsByConnection,
-    }),
-    (snapshot) => {
-      for (const [connectionId, sessions] of Object.entries(snapshot.active)) {
-        for (const session of sessions) {
-          const id = `interview:${connectionId}:${session.ieeeAddress}`
-          if (statusBySession.get(id) !== session.status) {
-            upsertToast(connectionId, session)
+    interviewState,
+    (connections) => {
+      for (const connection of connections) {
+        for (const pending of connection.pending) {
+          const key = sessionKey(connection.connectionId, pending.ieeeAddress)
+
+          if (!initialized) {
+            lastStatusBySession.set(key, 'requested')
+            continue
           }
+
+          if (lastStatusBySession.get(key) === 'requested') {
+            continue
+          }
+
+          lastStatusBySession.set(key, 'requested')
+          addInterviewToast(
+            connection.connectionId,
+            pending.ieeeAddress,
+            pending.friendlyName,
+            'requested',
+          )
+        }
+
+        for (const active of connection.active) {
+          const key = sessionKey(connection.connectionId, active.ieeeAddress)
+
+          if (!initialized) {
+            lastStatusBySession.set(key, active.status)
+            continue
+          }
+
+          if (lastStatusBySession.get(key) === active.status) {
+            continue
+          }
+
+          lastStatusBySession.set(key, active.status)
+          addInterviewToast(
+            connection.connectionId,
+            active.ieeeAddress,
+            active.friendlyName,
+            active.status,
+            active.error,
+          )
+        }
+
+        for (const completed of connection.completed) {
+          const key = sessionKey(connection.connectionId, completed.ieeeAddress)
+
+          if (!initialized) {
+            lastStatusBySession.set(key, completed.status)
+            continue
+          }
+
+          if (lastStatusBySession.get(key) === completed.status) {
+            continue
+          }
+
+          lastStatusBySession.set(key, completed.status)
+          addInterviewToast(
+            connection.connectionId,
+            completed.ieeeAddress,
+            completed.friendlyName,
+            completed.status,
+            completed.error,
+          )
         }
       }
 
-      for (const [connectionId, sessions] of Object.entries(snapshot.completed)) {
-        for (const session of sessions) {
-          const id = `interview:${connectionId}:${session.ieeeAddress}`
-          if (statusBySession.get(id) !== session.status) {
-            upsertToast(connectionId, session)
-          }
-        }
-      }
+      initialized = true
     },
     { deep: true, immediate: true },
   )
-
-  onUnmounted(() => {
-    for (const timer of removeTimers.values()) {
-      clearTimeout(timer)
-    }
-    removeTimers.clear()
-  })
 }

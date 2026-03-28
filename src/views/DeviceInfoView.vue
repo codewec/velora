@@ -215,6 +215,9 @@ async function runDangerAction(
   payload: Record<string, unknown>,
   successTitle: string,
   successDescription?: string,
+  options?: {
+    showSuccessToast?: boolean
+  },
 ) {
   isSubmittingDangerAction.value = true
 
@@ -233,11 +236,13 @@ async function runDangerAction(
     return false
   }
 
-  toast.add({
-    title: successTitle,
-    description: successDescription,
-    color: 'success',
-  })
+  if (options?.showSuccessToast !== false) {
+    toast.add({
+      title: successTitle,
+      description: successDescription,
+      color: 'success',
+    })
+  }
 
   isSubmittingDangerAction.value = false
   return true
@@ -247,8 +252,8 @@ async function reconfigureDevice(device: Device) {
   const done = await runDangerAction(
     'bridge/request/device/configure',
     { id: device.ieee_address },
+    device.description || device.friendly_name,
     t('devicePage.reconfigureStarted'),
-    device.friendly_name,
   )
 
   if (done) {
@@ -262,9 +267,15 @@ async function interviewDevice(device: Device) {
     { id: device.ieee_address },
     t('devicePage.interviewStarted'),
     device.friendly_name,
+    { showSuccessToast: false },
   )
 
   if (done) {
+    bridgeStore.registerInterviewRequest(
+      props.connectionId,
+      device.ieee_address,
+      device.friendly_name,
+    )
     isInterviewModalOpen.value = false
   }
 }
@@ -277,8 +288,8 @@ async function removeDevice(device: Device) {
       force: removeForce.value,
       block: removeBlock.value,
     },
+    device.description || device.friendly_name,
     t('devicePage.removeRequested'),
-    device.friendly_name,
   )
 
   if (done) {

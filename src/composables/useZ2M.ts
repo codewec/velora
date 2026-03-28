@@ -5,6 +5,7 @@ import { i18n } from '@/i18n'
 import { useLogsStore } from '@/stores/logs'
 import type { Z2MMessage } from '@/types/z2m'
 import { formatBrowserTime } from '@/utils/dateTime'
+import { createTransactionId } from '@/utils/transaction'
 
 type MessageHandler = (message: Z2MMessage) => void
 
@@ -286,8 +287,17 @@ function createClient(connectionId: string, connection: Z2MConnectionConfig): Z2
       return false
     }
 
-    socket.send(JSON.stringify({ topic, payload }))
-    const raw = JSON.stringify({ topic, payload })
+    const normalizedPayload =
+      topic.startsWith('bridge/request/') &&
+      payload &&
+      typeof payload === 'object' &&
+      !Array.isArray(payload) &&
+      !('transaction' in payload)
+        ? { ...(payload as Record<string, unknown>), transaction: createTransactionId() }
+        : payload
+
+    socket.send(JSON.stringify({ topic, payload: normalizedPayload }))
+    const raw = JSON.stringify({ topic, payload: normalizedPayload })
     metrics.value = {
       ...metrics.value,
       messagesSent: metrics.value.messagesSent + 1,
@@ -298,7 +308,7 @@ function createClient(connectionId: string, connection: Z2MConnectionConfig): Z2
       'info',
       'tx',
       i18n.global.t('logsPage.sent', { topic }),
-      JSON.stringify({ topic, payload }, null, 2),
+      JSON.stringify({ topic, payload: normalizedPayload }, null, 2),
     )
     return true
   }

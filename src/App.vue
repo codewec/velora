@@ -15,7 +15,7 @@ useUiColorPreferences()
 </script>
 
 <template>
-  <UApp :toaster="{ position: 'bottom-right', expand: false }">
+  <UApp :toaster="{ position: 'bottom-right', expand: true, max: 6 }">
     <AppLayout>
       <RouterView />
     </AppLayout>
