@@ -26,6 +26,7 @@ const descriptionDraft = ref('')
 const isFriendlyNameModalOpen = ref(false)
 const isSavingFriendlyName = ref(false)
 const friendlyNameDraft = ref('')
+const isNamingHelpModalOpen = ref(false)
 const homeassistantRename = ref(false)
 const isReconfigureModalOpen = ref(false)
 const isInterviewModalOpen = ref(false)
@@ -36,6 +37,17 @@ const removeBlock = ref(false)
 const bridgeStore = useBridgeStore()
 const devicesStore = useDevicesStore()
 const { t } = useI18n()
+
+interface MetadataRow {
+  label: string
+  value: string
+  editable?: 'friendly' | 'description'
+}
+
+interface MetadataSection {
+  title: string
+  rows: MetadataRow[]
+}
 
 const baseTopic = computed(
   () => bridgeStore.infoFor(props.connectionId)?.config?.mqtt?.base_topic || 'zigbee2mqtt',
@@ -56,53 +68,112 @@ function ouiVendor(ieeeAddress: string) {
   return OUI.get(ieeeAddress.slice(2, 8).toLowerCase()) || '?'
 }
 
-function metadataRows(device: Device) {
+function supportedLabel(device: Device) {
+  if (device.supported == null) {
+    return t('app.unknown')
+  }
+
+  if (!device.supported) {
+    return t('deviceInfo.supportedUnsupported')
+  }
+
+  const source = device.definition?.source
+
+  if (source === 'native') {
+    return t('deviceInfo.supportedNative')
+  }
+
+  if (source === 'generated') {
+    return t('deviceInfo.supportedGenerated')
+  }
+
+  if (source === 'external') {
+    return t('deviceInfo.supportedExternal')
+  }
+
+  return t('deviceInfo.supportedNative')
+}
+
+function metadataSections(device: Device): MetadataSection[] {
   const softwareBuild = device.software_build_id || t('app.unknown')
   const dateCode = device.date_code ? ` (${device.date_code})` : ''
 
   return [
-    { label: t('deviceInfo.ieeeAddress'), value: device.ieee_address },
-    { label: t('deviceInfo.oui'), value: ouiVendor(device.ieee_address) },
     {
-      label: t('deviceInfo.vendor'),
-      value: device.definition?.vendor || device.manufacturer || t('app.unknown'),
+      title: t('deviceInfo.naming'),
+      rows: [
+        {
+          label: t('devicePage.friendlyName'),
+          value: device.friendly_name,
+          editable: 'friendly' as const,
+        },
+        {
+          label: t('devicePage.description'),
+          value:
+            device.description ||
+            device.definition?.description ||
+            t('deviceInfo.descriptionFallback'),
+          editable: 'description' as const,
+        },
+      ],
     },
     {
-      label: t('deviceInfo.model'),
-      value: device.definition?.model || device.model_id || t('app.unknown'),
+      title: t('deviceInfo.identity'),
+      rows: [
+        { label: t('deviceInfo.ieeeAddress'), value: device.ieee_address },
+        { label: t('deviceInfo.oui'), value: ouiVendor(device.ieee_address) },
+        {
+          label: t('deviceInfo.vendor'),
+          value: device.definition?.vendor || device.manufacturer || t('app.unknown'),
+        },
+        {
+          label: t('deviceInfo.model'),
+          value: device.definition?.model || device.model_id || t('app.unknown'),
+        },
+        {
+          label: t('deviceInfo.zigbeeModel'),
+          value: `${device.model_id || t('app.unknown')} (${device.manufacturer || t('app.unknown')})`,
+        },
+      ],
     },
     {
-      label: t('deviceInfo.zigbeeModel'),
-      value: `${device.model_id || t('app.unknown')} (${device.manufacturer || t('app.unknown')})`,
-    },
-    { label: t('deviceInfo.type'), value: device.type },
-    { label: t('deviceInfo.powerSource'), value: device.power_source || t('app.unknown') },
-    {
-      label: t('deviceInfo.networkAddress'),
-      value:
-        device.network_address != null
-          ? `${device.network_address} (${formatHex(device.network_address)})`
-          : t('app.unknown'),
-    },
-    { label: t('deviceInfo.mqttTopic'), value: `${baseTopic.value}/${device.friendly_name}` },
-    { label: t('deviceInfo.softwareBuild'), value: `${softwareBuild}${dateCode}` },
-    {
-      label: t('deviceInfo.interviewCompleted'),
-      value:
-        device.interview_completed == null
-          ? t('app.unknown')
-          : device.interview_completed
-            ? t('app.yes')
-            : t('app.no'),
+      title: t('deviceInfo.network'),
+      rows: [
+        { label: t('deviceInfo.type'), value: device.type },
+        { label: t('deviceInfo.powerSource'), value: device.power_source || t('app.unknown') },
+        {
+          label: t('deviceInfo.networkAddress'),
+          value:
+            device.network_address != null
+              ? `${device.network_address} (${formatHex(device.network_address)})`
+              : t('app.unknown'),
+        },
+        { label: t('deviceInfo.mqttTopic'), value: `${baseTopic.value}/${device.friendly_name}` },
+      ],
     },
     {
-      label: t('deviceInfo.supported'),
-      value:
-        device.supported == null ? t('app.unknown') : device.supported ? t('app.yes') : t('app.no'),
-    },
-    {
-      label: t('app.disabled'),
-      value: device.disabled == null ? t('app.no') : device.disabled ? t('app.yes') : t('app.no'),
+      title: t('deviceInfo.status'),
+      rows: [
+        { label: t('deviceInfo.softwareBuild'), value: `${softwareBuild}${dateCode}` },
+        {
+          label: t('deviceInfo.interviewCompleted'),
+          value:
+            device.interview_completed == null
+              ? t('app.unknown')
+              : device.interview_completed
+                ? t('app.yes')
+                : t('app.no'),
+        },
+        {
+          label: t('deviceInfo.supported'),
+          value: supportedLabel(device),
+        },
+        {
+          label: t('app.disabled'),
+          value:
+            device.disabled == null ? t('app.no') : device.disabled ? t('app.yes') : t('app.no'),
+        },
+      ],
     },
   ]
 }
@@ -306,116 +377,151 @@ async function removeDevice(device: Device) {
   <DevicePageShell :connection-id="connectionId" :id="id" active-tab="info">
     <template #default="{ device }">
       <div class="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
-        <UCard
-          class="border-slate-200/80 bg-white/80 dark:border-white/10 dark:bg-slate-950/50"
-          :ui="{ body: 'p-5 sm:p-6' }"
-        >
-          <div class="space-y-4">
+        <div class="space-y-6">
+          <div class="space-y-3">
             <p class="text-sm uppercase tracking-[0.25em] text-slate-500">
               {{ t('app.metadata') }}
             </p>
+            <div class="grid gap-4 lg:grid-cols-2">
+              <UCard
+                v-for="section in metadataSections(device)"
+                :key="section.title"
+                class="border-slate-200/80 bg-white/80 dark:border-white/10 dark:bg-slate-950/50"
+                :ui="{ body: 'p-5 sm:p-6' }"
+              >
+                <div class="space-y-4">
+                  <div class="flex items-center justify-between gap-3">
+                    <p class="text-sm uppercase tracking-[0.25em] text-slate-500">
+                      {{ section.title }}
+                    </p>
 
-            <dl class="grid gap-x-6 gap-y-4 md:grid-cols-2">
-              <div>
-                <dt class="flex items-center gap-2 text-sm text-slate-400 dark:text-slate-500">
-                  <span>{{ t('devicePage.friendlyName') }}</span>
-                  <UButton
-                    icon="i-lucide-pencil"
-                    color="neutral"
-                    variant="ghost"
-                    size="xs"
-                    @click="openFriendlyNameModal(device)"
-                  />
-                </dt>
-                <dd class="mt-1 text-sm text-slate-700 dark:text-slate-300">
-                  {{ device.friendly_name }}
-                </dd>
-              </div>
+                    <UButton
+                      v-if="section.title === t('deviceInfo.naming')"
+                      color="neutral"
+                      variant="ghost"
+                      size="sm"
+                      icon="i-lucide-circle-help"
+                      :label="t('app.help')"
+                      @click="isNamingHelpModalOpen = true"
+                    />
+                  </div>
 
-              <div>
-                <dt class="flex items-center gap-2 text-sm text-slate-400 dark:text-slate-500">
-                  <span>{{ t('devicePage.description') }}</span>
-                  <UButton
-                    icon="i-lucide-pencil"
-                    color="neutral"
-                    variant="ghost"
-                    size="xs"
-                    @click="openDescriptionModal(device)"
-                  />
-                </dt>
-                <dd class="mt-1 text-sm text-slate-700 dark:text-slate-300">
-                  {{
-                    device.description ||
-                    device.definition?.description ||
-                    t('deviceInfo.descriptionFallback')
-                  }}
-                </dd>
-              </div>
-
-              <div v-for="row in metadataRows(device)" :key="row.label">
-                <dt class="text-sm text-slate-400 dark:text-slate-500">
-                  {{ row.label }}
-                </dt>
-                <dd class="mt-1 text-sm text-slate-700 dark:text-slate-300">
-                  {{ row.value }}
-                </dd>
-              </div>
-            </dl>
+                  <dl
+                    class="grid gap-x-6 gap-y-4"
+                    :class="
+                      section.title === t('deviceInfo.naming') ? 'grid-cols-1' : 'md:grid-cols-2'
+                    "
+                  >
+                    <div v-for="row in section.rows" :key="row.label">
+                      <dt
+                        class="flex items-center gap-2 text-sm text-slate-400 dark:text-slate-500"
+                      >
+                        <span>{{ row.label }}</span>
+                        <UButton
+                          v-if="row.editable === 'friendly'"
+                          icon="i-lucide-pencil"
+                          color="neutral"
+                          variant="ghost"
+                          size="xs"
+                          @click="openFriendlyNameModal(device)"
+                        />
+                        <UButton
+                          v-else-if="row.editable === 'description'"
+                          icon="i-lucide-pencil"
+                          color="neutral"
+                          variant="ghost"
+                          size="xs"
+                          @click="openDescriptionModal(device)"
+                        />
+                      </dt>
+                      <dd class="mt-1 text-sm text-slate-700 dark:text-slate-300">
+                        {{ row.value }}
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
+              </UCard>
+            </div>
           </div>
-        </UCard>
-
-        <div class="space-y-6">
-          <div
-            class="flex min-h-72 items-center justify-center overflow-hidden rounded-3xl bg-slate-100/80 p-6 ring ring-slate-200 backdrop-blur dark:bg-slate-900/60 dark:ring-white/10"
-          >
-            <img
-              v-if="deviceImageUrl(device) && !imageFailed"
-              :src="deviceImageUrl(device) || undefined"
-              :alt="device.friendly_name"
-              class="max-h-96 w-full object-contain"
-              @error="imageFailed = true"
-            />
-            <span v-else class="text-6xl font-semibold text-slate-500 dark:text-slate-400">
-              {{ device.friendly_name.slice(0, 1).toUpperCase() }}
-            </span>
+          <div class="space-y-3">
+            <p class="text-sm uppercase tracking-[0.25em] text-slate-500">
+              {{ t('devicePage.photo') }}
+            </p>
+            <div
+              class="flex min-h-72 items-center justify-center overflow-hidden rounded-3xl bg-slate-100/80 p-6 ring ring-slate-200 backdrop-blur dark:bg-slate-900/60 dark:ring-white/10"
+            >
+              <img
+                v-if="deviceImageUrl(device) && !imageFailed"
+                :src="deviceImageUrl(device) || undefined"
+                :alt="device.friendly_name"
+                class="max-h-96 w-full object-contain"
+                @error="imageFailed = true"
+              />
+              <span v-else class="text-6xl font-semibold text-slate-500 dark:text-slate-400">
+                {{ device.friendly_name.slice(0, 1).toUpperCase() }}
+              </span>
+            </div>
           </div>
+        </div>
 
+        <div class="space-y-3">
+          <p class="text-sm uppercase tracking-[0.25em] text-rose-500 dark:text-rose-300">
+            {{ t('devicePage.dangerZone') }}
+          </p>
           <UCard
             class="border-rose-200/80 bg-rose-50/70 dark:border-rose-500/20 dark:bg-rose-950/20"
             :ui="{ body: 'p-5 sm:p-6' }"
           >
             <div class="space-y-4">
               <div>
-                <p class="text-sm uppercase tracking-[0.25em] text-rose-500 dark:text-rose-300">
-                  {{ t('devicePage.dangerZone') }}
-                </p>
-                <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                <p class="text-sm text-slate-600 dark:text-slate-300">
                   {{ t('devicePage.dangerZoneDescription') }}
                 </p>
               </div>
 
-              <div class="flex flex-wrap gap-3">
-                <UButton
-                  color="warning"
-                  variant="soft"
-                  icon="i-lucide-wrench"
-                  :label="t('devicePage.reconfigure')"
-                  @click="isReconfigureModalOpen = true"
-                />
-                <UButton
-                  color="warning"
-                  variant="soft"
-                  icon="i-lucide-scan-search"
-                  :label="t('devicePage.interviewDevice')"
-                  @click="isInterviewModalOpen = true"
-                />
-                <UButton
-                  color="error"
-                  variant="soft"
-                  icon="i-lucide-trash-2"
-                  :label="t('devicePage.removeDevice')"
-                  @click="openRemoveModal"
-                />
+              <div class="space-y-4">
+                <div class="space-y-2">
+                  <UButton
+                    color="warning"
+                    variant="soft"
+                    icon="i-lucide-wrench"
+                    :label="t('devicePage.reconfigure')"
+                    @click="isReconfigureModalOpen = true"
+                  />
+                  <p class="text-sm text-slate-500 dark:text-slate-400">
+                    {{ t('devicePage.reconfigureDescription') }}
+                  </p>
+                </div>
+
+                <USeparator />
+
+                <div class="space-y-2">
+                  <UButton
+                    color="warning"
+                    variant="soft"
+                    icon="i-lucide-scan-search"
+                    :label="t('devicePage.interviewDevice')"
+                    @click="isInterviewModalOpen = true"
+                  />
+                  <p class="text-sm text-slate-500 dark:text-slate-400">
+                    {{ t('devicePage.interviewDescription') }}
+                  </p>
+                </div>
+
+                <USeparator />
+
+                <div class="space-y-2">
+                  <UButton
+                    color="error"
+                    variant="soft"
+                    icon="i-lucide-trash-2"
+                    :label="t('devicePage.removeDeviceAction')"
+                    @click="openRemoveModal"
+                  />
+                  <p class="text-sm text-slate-500 dark:text-slate-400">
+                    {{ t('devicePage.removeDescription') }}
+                  </p>
+                </div>
               </div>
             </div>
           </UCard>
@@ -466,6 +572,31 @@ async function removeDevice(device: Device) {
             <UButton :loading="isSavingFriendlyName" @click="device && saveFriendlyName(device)">
               {{ t('devicePage.renameDevice') }}
             </UButton>
+          </div>
+        </template>
+      </UModal>
+
+      <UModal v-model:open="isNamingHelpModalOpen" :title="t('deviceInfo.namingHelpTitle')">
+        <template #body>
+          <div class="space-y-4">
+            <p class="text-sm text-slate-600 dark:text-slate-300">
+              {{ t('deviceInfo.namingNotice') }}
+            </p>
+          </div>
+        </template>
+
+        <template #footer>
+          <div class="flex w-full items-center justify-between gap-3">
+            <UButton color="neutral" variant="ghost" @click="isNamingHelpModalOpen = false">
+              {{ t('app.close') }}
+            </UButton>
+            <UButton
+              color="neutral"
+              variant="soft"
+              icon="i-lucide-settings-2"
+              :label="t('app.settings')"
+              :to="`/connections/${connectionId}/preferences?tab=naming`"
+            />
           </div>
         </template>
       </UModal>

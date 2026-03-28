@@ -42,6 +42,8 @@ export const messages = {
   en: {
     app: {
       settings: 'Settings',
+      help: 'Help',
+      close: 'Close',
       appearance: 'Appearance',
       theme: 'Theme',
       colors: 'Colors',
@@ -78,7 +80,6 @@ export const messages = {
       metadata: 'Metadata',
       save: 'Save',
       cancel: 'Cancel',
-      close: 'Close',
     },
     preferencesPage: {
       title: 'Preferences',
@@ -267,6 +268,7 @@ export const messages = {
       deviceLogsCount: '{count} entries',
       noDeviceLogs: 'No device logs yet',
       noDeviceLogsDescription: 'Logs for this device will appear here as new events arrive.',
+      photo: 'Photo',
       dangerZone: 'Danger zone',
       dangerZoneDescription:
         'These actions change device state or remove it from the Zigbee2MQTT database.',
@@ -279,6 +281,7 @@ export const messages = {
         'Trigger a new interview for this device. This re-reads endpoints, clusters and basic attributes.',
       interviewStarted: 'Interview requested',
       removeDevice: 'Remove',
+      removeDeviceAction: 'Remove device',
       removeDescription: 'Remove this device from the Zigbee network and Zigbee2MQTT database.',
       removeForce: 'Force remove',
       removeForceDescription:
@@ -435,6 +438,13 @@ export const messages = {
       sunday: 'Sunday',
     },
     deviceInfo: {
+      naming: 'Naming',
+      namingHelpTitle: 'Naming help',
+      namingNotice:
+        'Velora uses the description as the main display name. Friendly name is used in MQTT, can be used for naming in Home Assistant, and is also used in Velora for parsing and grouping devices by the name pattern. You can change the grouping pattern in settings.',
+      identity: 'Identity',
+      network: 'Network',
+      status: 'Status',
       ieeeAddress: 'IEEE address',
       oui: 'OUI',
       vendor: 'Vendor',
@@ -447,12 +457,18 @@ export const messages = {
       softwareBuild: 'Software build',
       interviewCompleted: 'Interview completed',
       supported: 'Supported',
+      supportedNative: 'Native',
+      supportedGenerated: 'Generated',
+      supportedExternal: 'External',
+      supportedUnsupported: 'Unsupported',
       descriptionFallback: 'Unknown',
     },
   },
   ru: {
     app: {
       settings: 'Настройки',
+      help: 'Справка',
+      close: 'Закрыть',
       appearance: 'Оформление',
       theme: 'Тема',
       colors: 'Цвета',
@@ -489,7 +505,6 @@ export const messages = {
       metadata: 'Метаданные',
       save: 'Сохранить',
       cancel: 'Отмена',
-      close: 'Закрыть',
     },
     preferencesPage: {
       title: 'Параметры',
@@ -679,6 +694,7 @@ export const messages = {
       noDeviceLogs: 'Логов устройства пока нет',
       noDeviceLogsDescription:
         'Когда для этого устройства придут новые события, они появятся здесь.',
+      photo: 'Фото',
       dangerZone: 'Опасная зона',
       dangerZoneDescription:
         'Эти действия изменяют состояние устройства или удаляют его из базы Zigbee2MQTT.',
@@ -691,6 +707,7 @@ export const messages = {
         'Запустить новое интервью устройства. Будут заново прочитаны endpoints, clusters и базовые атрибуты.',
       interviewStarted: 'Интервью запрошено',
       removeDevice: 'Удалить',
+      removeDeviceAction: 'Удалить устройство',
       removeDescription: 'Удалить это устройство из Zigbee-сети и базы Zigbee2MQTT.',
       removeForce: 'Принудительное удаление',
       removeForceDescription:
@@ -847,6 +864,13 @@ export const messages = {
       sunday: 'Воскресенье',
     },
     deviceInfo: {
+      naming: 'Имена',
+      namingHelpTitle: 'Справка по именованию',
+      namingNotice:
+        'В Velora основным отображаемым именем считается описание. Имя устройства используется в MQTT, может использоваться для именования в Home Assistant и также используется в Velora для разбора и группировки устройств по шаблону имени. Настроить шаблон группировки можно в настройках.',
+      identity: 'Идентификация',
+      network: 'Сеть',
+      status: 'Статус',
       ieeeAddress: 'IEEE address',
       oui: 'OUI',
       vendor: 'Производитель',
@@ -859,6 +883,10 @@ export const messages = {
       softwareBuild: 'Сборка ПО',
       interviewCompleted: 'Интервью завершено',
       supported: 'Поддерживается',
+      supportedNative: 'Нативная',
+      supportedGenerated: 'Сгенерированная',
+      supportedExternal: 'Внешняя',
+      supportedUnsupported: 'Не поддерживается',
       descriptionFallback: 'Неизвестно',
     },
   },

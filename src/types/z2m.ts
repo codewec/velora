@@ -8,6 +8,7 @@ export interface RoutedZ2MMessage extends Z2MMessage {
 }
 
 export interface DeviceDefinition {
+  source?: 'native' | 'generated' | 'external' | string
   model: string
   vendor?: string
   description?: string
