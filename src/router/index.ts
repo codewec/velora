@@ -8,6 +8,7 @@ import NetworkMapView from '@/views/NetworkMapView.vue'
 import DeviceStateView from '@/views/DeviceStateView.vue'
 import InformationView from '@/views/InformationView.vue'
 import LogsView from '@/views/LogsView.vue'
+import PreferencesView from '@/views/PreferencesView.vue'
 
 function resolvePreferredConnectionId() {
   const savedConnectionId = getSavedConnectionId()
@@ -75,6 +76,12 @@ const router = createRouter({
       props: true,
     },
     {
+      path: '/connections/:connectionId/preferences',
+      name: 'preferences',
+      component: PreferencesView,
+      props: true,
+    },
+    {
       path: '/:pathMatch(.*)*',
       redirect: () => `/connections/${resolvePreferredConnectionId()}`,
     },
@@ -107,6 +114,10 @@ router.beforeEach((to) => {
 
     if (to.name === 'network-map') {
       return `/connections/${connectionId}/network-map`
+    }
+
+    if (to.name === 'preferences') {
+      return `/connections/${connectionId}/preferences`
     }
 
     return `/connections/${connectionId}`

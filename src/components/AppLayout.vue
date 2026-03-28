@@ -30,7 +30,8 @@ const links = computed<NavigationMenuItem[][]>(() => [
         !isDeviceRoute.value &&
         route.name !== 'logs' &&
         route.name !== 'information' &&
-        route.name !== 'network-map',
+        route.name !== 'network-map' &&
+        route.name !== 'preferences',
       onSelect: () => {
         open.value = false
       },

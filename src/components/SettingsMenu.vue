@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import type { DropdownMenuItem } from '@nuxt/ui'
 import { useI18n } from 'vue-i18n'
+import { getDefaultConnectionId } from '@/config/z2mConnections'
 import { useColorMode } from '@/composables/useColorMode'
 import { useLocalePreference } from '@/composables/useLocalePreference'
 import { useUiColorPreferences } from '@/composables/useUiColorPreferences'
@@ -14,6 +16,8 @@ const colorMode = useColorMode()
 const { t } = useI18n()
 const { locale } = useLocalePreference()
 const { primary, neutral } = useUiColorPreferences()
+const route = useRoute()
+const router = useRouter()
 
 const colors = [
   'red',
@@ -71,7 +75,25 @@ const localeOptions = [
   { value: 'ru', labelKey: 'app.russian', icon: 'i-lucide-languages' },
 ] as const
 
+function openPreferences() {
+  const connectionId =
+    typeof route.params.connectionId === 'string'
+      ? route.params.connectionId
+      : getDefaultConnectionId()
+
+  void router.push(`/connections/${connectionId}/preferences`)
+}
+
 const items = computed<DropdownMenuItem[][]>(() => [
+  [
+    {
+      label: t('preferencesPage.title'),
+      icon: 'i-lucide-sliders-horizontal',
+      onSelect: () => {
+        openPreferences()
+      },
+    },
+  ],
   [
     {
       label: t('app.colors'),

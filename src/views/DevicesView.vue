@@ -266,6 +266,10 @@ function openDevice(entry: DeviceCardEntry) {
 function handleTableSelect(_: Event, row: DeviceTableSelectRow) {
   openDevice(row.original.entry)
 }
+
+function openNamingPreferences() {
+  void router.push(`/connections/${props.connectionId}/preferences?tab=naming`)
+}
 </script>
 
 <template>
@@ -320,14 +324,25 @@ function handleTableSelect(_: Event, row: DeviceTableSelectRow) {
 
     <template #body>
       <div class="flex flex-col gap-4 sm:gap-6 lg:gap-8">
-        <UAlert
-          v-if="groupBy === 'room'"
-          color="neutral"
-          variant="subtle"
-          icon="i-lucide-info"
-          :title="t('devicesPage.nameGroupingTitle')"
-          :description="t('devicesPage.nameGroupingDescription')"
-        />
+        <div v-if="groupBy === 'room'" class="space-y-2">
+          <UAlert
+            color="neutral"
+            variant="subtle"
+            icon="i-lucide-info"
+            :title="t('devicesPage.nameGroupingTitle')"
+            :description="t('devicesPage.nameGroupingDescription')"
+          />
+          <div class="flex justify-start">
+            <UButton
+              color="neutral"
+              variant="ghost"
+              size="sm"
+              icon="i-lucide-sliders-horizontal"
+              :label="t('app.settings')"
+              @click="openNamingPreferences"
+            />
+          </div>
+        </div>
 
         <template v-if="viewMode === 'cards' && cards.length && groupBy !== 'none'">
           <section v-for="group in groupedTableRows" :key="group.key" class="space-y-4">

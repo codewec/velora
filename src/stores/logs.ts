@@ -1,8 +1,10 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
+import { usePreferences } from '@/composables/usePreferences'
 import { formatBrowserTime } from '@/utils/dateTime'
+import { meetsMinimumLogLevel, type AppLogLevel } from '@/utils/logging'
 
-export type LogLevel = 'info' | 'warning' | 'error' | 'debug'
+export type LogLevel = AppLogLevel
 export type LogKind = 'transport' | 'tx' | 'rx' | 'bridge' | 'device' | 'event'
 
 export interface LogEntry {
@@ -16,19 +18,24 @@ export interface LogEntry {
   raw: string
 }
 
-const MAX_LOGS = 1000
-
 export const useLogsStore = defineStore('logs', () => {
   const entries = ref<Record<string, LogEntry[]>>({})
+  const { minLogLevel, maxLogEntries } = usePreferences()
 
   function logsFor(connectionId: string) {
-    return entries.value[connectionId] ?? []
+    return (entries.value[connectionId] ?? [])
+      .filter((entry) => meetsMinimumLogLevel(entry.level, minLogLevel.value))
+      .slice(0, maxLogEntries.value)
   }
 
   function addLog(
     connectionId: string,
     entry: Omit<LogEntry, 'id' | 'connectionId' | 'timestamp' | 'time'>,
   ) {
+    if (!meetsMinimumLogLevel(entry.level, minLogLevel.value)) {
+      return
+    }
+
     const next: LogEntry = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
       connectionId,
@@ -39,7 +46,7 @@ export const useLogsStore = defineStore('logs', () => {
 
     entries.value = {
       ...entries.value,
-      [connectionId]: [next, ...logsFor(connectionId)].slice(0, MAX_LOGS),
+      [connectionId]: [next, ...(entries.value[connectionId] ?? [])].slice(0, maxLogEntries.value),
     }
   }
 

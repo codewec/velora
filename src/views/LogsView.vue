@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
 import ConnectionNavbarActions from '@/components/ConnectionNavbarActions.vue'
@@ -20,6 +21,7 @@ const selectedLevel = ref<'all' | LogLevel>('all')
 const followLogs = ref(true)
 const logContainer = ref<HTMLElement | null>(null)
 const { t } = useI18n()
+const router = useRouter()
 const logDetailsStore = useLogDetailsStore()
 
 const levelOptions = computed(() => [
@@ -122,6 +124,10 @@ function clearLogs() {
   logsStore.clear(props.connectionId)
   z2m.value.clearLogs()
 }
+
+function openLogPreferences() {
+  void router.push(`/connections/${props.connectionId}/preferences?tab=logs`)
+}
 </script>
 
 <template>
@@ -156,11 +162,24 @@ function clearLogs() {
               size="sm"
               class="w-36"
             />
+            <UButton
+              color="neutral"
+              variant="ghost"
+              icon="i-lucide-sliders-horizontal"
+              :label="t('app.settings')"
+              @click="openLogPreferences"
+            />
             <div class="flex items-center gap-2">
               <span class="text-sm text-muted">{{ t('logsPage.raw') }}</span>
               <USwitch v-model="rawMode" />
             </div>
-            <UButton color="neutral" variant="ghost" :label="t('app.clear')" @click="clearLogs" />
+            <UButton
+              color="neutral"
+              variant="ghost"
+              icon="i-lucide-trash-2"
+              :label="t('app.clear')"
+              @click="clearLogs"
+            />
           </div>
         </template>
       </UDashboardToolbar>
