@@ -1,5 +1,5 @@
 name: Velora
-version: "0.0.4"
+version: "0.0.5"
 slug: velora
 description: Alternative Zigbee2MQTT web UI
 url: https://github.com/codewec/velora

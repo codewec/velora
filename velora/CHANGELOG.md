@@ -1,6 +1,34 @@
 # Changelog
 
 
+## v0.0.5
+
+[compare changes](https://github.com/codewec/velora/compare/v0.0.4...v0.0.5)
+
+### 🚀 Enhancements
+
+- Device view ([41846f2](https://github.com/codewec/velora/commit/41846f2))
+- Preferences ([087fae5](https://github.com/codewec/velora/commit/087fae5))
+- Device routes ([d5f12a3](https://github.com/codewec/velora/commit/d5f12a3))
+- Device info tab ([45f6e20](https://github.com/codewec/velora/commit/45f6e20))
+- Exposes ([d53f3b5](https://github.com/codewec/velora/commit/d53f3b5))
+
+### 🩹 Fixes
+
+- Visual ([3b7bd90](https://github.com/codewec/velora/commit/3b7bd90))
+- Rx tx badge ([8399d63](https://github.com/codewec/velora/commit/8399d63))
+- Log message title ([5c5d213](https://github.com/codewec/velora/commit/5c5d213))
+- Color theme save ([e93a686](https://github.com/codewec/velora/commit/e93a686))
+- Sync toasts ([b3c6c8c](https://github.com/codewec/velora/commit/b3c6c8c))
+
+### 🏡 Chore
+
+- Favicons ([4ebc452](https://github.com/codewec/velora/commit/4ebc452))
+
+### ❤️ Contributors
+
+- Codewec
+
 ## v0.0.4
 
 [compare changes](https://github.com/codewec/velora/compare/v0.0.3...v0.0.4)
