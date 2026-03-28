@@ -4,6 +4,7 @@ import type { DropdownMenuItem } from '@nuxt/ui'
 import { useI18n } from 'vue-i18n'
 import { useColorMode } from '@/composables/useColorMode'
 import { useLocalePreference } from '@/composables/useLocalePreference'
+import { useUiColorPreferences } from '@/composables/useUiColorPreferences'
 
 defineProps<{
   collapsed?: boolean
@@ -12,7 +13,7 @@ defineProps<{
 const colorMode = useColorMode()
 const { t } = useI18n()
 const { locale } = useLocalePreference()
-const appConfig = useAppConfig()
+const { primary, neutral } = useUiColorPreferences()
 
 const colors = [
   'red',
@@ -79,7 +80,7 @@ const items = computed<DropdownMenuItem[][]>(() => [
         {
           label: t('app.primary'),
           slot: 'chip',
-          chip: appConfig.ui.colors.primary,
+          chip: primary.value,
           content: {
             align: 'center',
             collisionPadding: 16,
@@ -88,19 +89,18 @@ const items = computed<DropdownMenuItem[][]>(() => [
             label: color,
             chip: color,
             slot: 'chip',
-            checked: appConfig.ui.colors.primary === color,
+            checked: primary.value === color,
             type: 'checkbox',
             onSelect: (e) => {
               e.preventDefault()
-              appConfig.ui.colors.primary = color
+              primary.value = color
             },
           })),
         },
         {
           label: t('app.neutral'),
           slot: 'chip',
-          chip:
-            appConfig.ui.colors.neutral === 'neutral' ? 'old-neutral' : appConfig.ui.colors.neutral,
+          chip: neutral.value === 'neutral' ? 'old-neutral' : neutral.value,
           content: {
             align: 'end',
             collisionPadding: 16,
@@ -110,10 +110,10 @@ const items = computed<DropdownMenuItem[][]>(() => [
             chip: color === 'neutral' ? 'old-neutral' : color,
             slot: 'chip',
             type: 'checkbox',
-            checked: appConfig.ui.colors.neutral === color,
+            checked: neutral.value === color,
             onSelect: (e) => {
               e.preventDefault()
-              appConfig.ui.colors.neutral = color
+              neutral.value = color
             },
           })),
         },

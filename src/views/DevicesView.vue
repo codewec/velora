@@ -111,6 +111,10 @@ type DeviceTableRow = {
   entry: DeviceCardEntry
 }
 
+type DeviceTableSelectRow = {
+  original: DeviceTableRow
+}
+
 const tableWrapperClass =
   'overflow-hidden rounded-2xl border border-slate-200/80 bg-white/85 shadow-sm ring-1 ring-slate-950/5 dark:border-white/10 dark:bg-white/5 dark:ring-white/10'
 
@@ -258,6 +262,10 @@ function openDevice(entry: DeviceCardEntry) {
     `/connections/${props.connectionId}/devices/${entry.device.ieee_address}/exposes`,
   )
 }
+
+function handleTableSelect(_: Event, row: DeviceTableSelectRow) {
+  openDevice(row.original.entry)
+}
 </script>
 
 <template>
@@ -380,7 +388,7 @@ function openDevice(entry: DeviceCardEntry) {
                     tr: 'cursor-pointer transition-colors hover:bg-slate-50/90 dark:hover:bg-white/5',
                   },
                 }"
-                @select="(_, row) => openDevice(row.original.entry)"
+                @select="handleTableSelect"
               >
                 <template #name-cell="{ row }">
                   <div class="flex min-w-0 items-center gap-3">
@@ -564,7 +572,7 @@ function openDevice(entry: DeviceCardEntry) {
                 tr: 'cursor-pointer transition-colors hover:bg-slate-50/90 dark:hover:bg-white/5',
               },
             }"
-            @select="(_, row) => openDevice(row.original.entry)"
+            @select="handleTableSelect"
           >
             <template #name-cell="{ row }">
               <div class="flex min-w-0 items-center gap-3">
