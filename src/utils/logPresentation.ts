@@ -52,6 +52,7 @@ export function parseBridgeLoggingPayload(raw: string): ParsedBridgeLoggingPaylo
 
     const deviceName =
       parsed.message.match(/to '([^']+)' failed/i)?.[1] ??
+      parsed.message.match(/topic 'zigbee2mqtt\/([^']+)'/i)?.[1] ??
       parsed.message.match(/from '([^']+)'/i)?.[1] ??
       null
     const shortReason =

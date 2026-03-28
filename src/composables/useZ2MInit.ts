@@ -157,24 +157,29 @@ export function useZ2MInit() {
     if (message.topic === 'bridge/logging' && isBridgeLoggingMessage(message.payload)) {
       const raw = JSON.stringify(message.payload, null, 2)
       const parsed = parseBridgeLoggingPayload(raw)
+      const level =
+        message.payload.level === 'error'
+          ? 'error'
+          : message.payload.level === 'warning'
+            ? 'warning'
+            : message.payload.level === 'debug'
+              ? 'debug'
+              : 'info'
 
       if (parsed?.deviceName && isOutboundDeviceLog(parsed.message)) {
         devicesStore.markDeviceBridgeTx(connectionId, parsed.deviceName)
       }
 
       logsStore.addLog(connectionId, {
-        level:
-          message.payload.level === 'error'
-            ? 'error'
-            : message.payload.level === 'warning'
-              ? 'warning'
-              : message.payload.level === 'debug'
-                ? 'debug'
-                : 'info',
+        level,
         kind: 'bridge',
         summary: parsed?.deviceName
-          ? i18n.global.t('logsPage.deviceErrorSummary', { device: parsed.deviceName })
-          : i18n.global.t('logsPage.errorToastTitle'),
+          ? level === 'error'
+            ? i18n.global.t('logsPage.deviceErrorSummary', { device: parsed.deviceName })
+            : i18n.global.t('logsPage.deviceLogSummary', { device: parsed.deviceName })
+          : level === 'error'
+            ? i18n.global.t('logsPage.errorToastTitle')
+            : i18n.global.t('logsPage.bridgeLogSummary'),
         raw,
       })
       return
