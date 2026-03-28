@@ -314,13 +314,6 @@ function groupedControlProps(group: Expose[]) {
             "
             class="grid gap-4"
           >
-            <GroupedScheduleControl
-              v-if="hasGroupedScheduleControl(device.definition?.exposes, state)"
-              :connection-id="connectionId"
-              :device-name="device.friendly_name"
-              :state="state"
-            />
-
             <template
               v-for="group in groupedWritableExposes(device.definition?.exposes)"
               :key="`group-${group.map(featureKey).join('-')}`"
@@ -356,6 +349,13 @@ function groupedControlProps(group: Expose[]) {
                 :description="t('devicePage.unsupportedExposeDescription')"
               />
             </template>
+
+            <GroupedScheduleControl
+              v-if="hasGroupedScheduleControl(device.definition?.exposes, state)"
+              :connection-id="connectionId"
+              :device-name="device.friendly_name"
+              :state="state"
+            />
           </div>
 
           <UAlert

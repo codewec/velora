@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import FeatureHeader from '@/components/DeviceControls/FeatureHeader.vue'
 import { useZ2M } from '@/composables/useZ2M'
@@ -15,10 +16,13 @@ const props = defineProps<{
 }>()
 
 const items = computed(() => props.expose.values.map((value) => ({ label: value, value })))
+const singleActionValue = computed(() => props.expose.values[0])
+const isSingleAction = computed(() => props.expose.values.length === 1)
 const CONTROL_PENDING_TIMEOUT_MS = 5000
 const model = ref<string | undefined>(undefined)
 const pending = ref(false)
 const devicesStore = useDevicesStore()
+const { t } = useI18n()
 let pendingTimer: ReturnType<typeof setTimeout> | null = null
 
 function clearPendingTimer() {
@@ -85,11 +89,22 @@ onUnmounted(() => {
       <FeatureHeader :expose="expose" />
 
       <div class="flex justify-end">
+        <UButton
+          v-if="isSingleAction && singleActionValue"
+          color="neutral"
+          variant="soft"
+          icon="i-lucide-hand"
+          :loading="pending"
+          @click="handleUpdate(singleActionValue)"
+        >
+          {{ t('devicePage.triggerAction') }}
+        </UButton>
         <USelect
+          v-else
           :items="items"
           :model-value="model"
           :loading="pending"
-          placeholder="Select value"
+          :placeholder="t('devicePage.selectValue')"
           @update:model-value="handleUpdate"
         />
       </div>

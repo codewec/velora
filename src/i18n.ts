@@ -290,6 +290,8 @@ export const messages = {
       removeBlockDescription:
         'If the device joins again, Zigbee2MQTT will immediately request it to leave the network.',
       removeRequested: 'Remove requested',
+      triggerAction: 'Trigger',
+      selectValue: 'Select value',
       dangerActionFailed: 'Action failed',
     },
     infoPage: {
@@ -716,6 +718,8 @@ export const messages = {
       removeBlockDescription:
         'Если устройство снова попытается присоединиться, Zigbee2MQTT сразу попросит его покинуть сеть.',
       removeRequested: 'Удаление запрошено',
+      triggerAction: 'Выполнить',
+      selectValue: 'Выберите значение',
       dangerActionFailed: 'Не удалось выполнить действие',
     },
     infoPage: {

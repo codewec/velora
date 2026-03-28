@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import FeatureHeader from '@/components/DeviceControls/FeatureHeader.vue'
 import { useZ2M } from '@/composables/useZ2M'
@@ -15,6 +16,7 @@ const props = defineProps<{
 }>()
 
 const devicesStore = useDevicesStore()
+const { t } = useI18n()
 const CONTROL_PENDING_TIMEOUT_MS = 5000
 const sortedExposes = computed(() =>
   [...props.exposes].sort((left, right) => featureKey(left).localeCompare(featureKey(right))),
@@ -35,6 +37,14 @@ function clearPendingTimer(key: string) {
 
 function items(expose: EnumExpose) {
   return expose.values.map((value) => ({ label: value, value }))
+}
+
+function singleActionValue(expose: EnumExpose) {
+  return expose.values[0]
+}
+
+function isSingleAction(expose: EnumExpose) {
+  return expose.values.length === 1
 }
 
 function modelValue(expose: EnumExpose) {
@@ -138,11 +148,22 @@ onUnmounted(() => {
           </span>
 
           <div class="flex justify-end">
+            <UButton
+              v-if="isSingleAction(expose) && singleActionValue(expose)"
+              color="neutral"
+              variant="soft"
+              icon="i-lucide-hand"
+              :loading="pendingByKey[featureKey(expose)]"
+              @click="handleUpdate(expose, singleActionValue(expose))"
+            >
+              {{ t('devicePage.triggerAction') }}
+            </UButton>
             <USelect
+              v-else
               :items="items(expose)"
               :model-value="modelValue(expose)"
               :loading="pendingByKey[featureKey(expose)]"
-              placeholder="Select value"
+              :placeholder="t('devicePage.selectValue')"
               @update:model-value="
                 (value: string | number | boolean | Record<string, unknown> | undefined) =>
                   handleUpdate(expose, value)

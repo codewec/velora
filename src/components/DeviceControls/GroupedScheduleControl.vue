@@ -168,15 +168,6 @@ async function saveSchedule() {
       </div>
 
       <div class="space-y-3 rounded-2xl bg-slate-100/70 p-3 dark:bg-slate-900/50">
-        <div class="hidden grid-cols-[7rem_minmax(0,1fr)] gap-3 px-1 md:grid">
-          <div />
-          <div class="grid grid-cols-5 text-[11px] font-medium text-slate-500 dark:text-slate-400">
-            <span v-for="marker in TIMELINE_MARKERS" :key="marker" class="text-left last:text-right"
-              >{{ marker }}:00</span
-            >
-          </div>
-        </div>
-
         <div
           v-for="day in days"
           :key="day.key"
@@ -187,14 +178,26 @@ async function saveSchedule() {
               <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">
                 {{ dayLabel(day.day) }}
               </p>
-              <p class="text-xs text-slate-500 dark:text-slate-400">
-                {{ day.entries.length }} {{ t('schedule.slots') }}
-              </p>
             </div>
-            <UBadge color="neutral" variant="soft">{{ day.entries.length }}</UBadge>
+            <UBadge color="neutral" variant="soft">
+              {{ day.entries.length }} {{ t('schedule.slots') }}
+            </UBadge>
           </div>
 
           <div class="space-y-3">
+            <div
+              v-if="day.entries.length"
+              class="grid grid-cols-5 text-[11px] font-medium text-slate-500 dark:text-slate-400"
+            >
+              <span
+                v-for="marker in TIMELINE_MARKERS"
+                :key="`${day.key}-${marker}`"
+                class="text-left last:text-right"
+              >
+                {{ marker }}:00
+              </span>
+            </div>
+
             <div
               v-if="day.entries.length"
               class="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-50/80 p-2 dark:border-white/10 dark:bg-slate-900/70"
@@ -222,13 +225,17 @@ async function saveSchedule() {
                   :text="`${segment.time} • ${formatTemperature(segment.temperature)}`"
                 >
                   <div
-                    class="absolute inset-y-0 rounded-xl border border-white/50 shadow-sm dark:border-white/10"
+                    class="absolute inset-y-0 flex items-center justify-center overflow-hidden rounded-xl border border-white/50 px-1 shadow-sm dark:border-white/10"
                     :class="segmentTone(segment.temperature)"
                     :style="{
                       left: `${segment.offsetPercent}%`,
                       width: `${segment.widthPercent}%`,
                     }"
-                  />
+                  >
+                    <span class="truncate text-[10px] font-semibold text-white/95">
+                      {{ formatTemperature(segment.temperature) }}
+                    </span>
+                  </div>
                 </UTooltip>
               </div>
             </div>
@@ -238,18 +245,6 @@ async function saveSchedule() {
               class="rounded-xl border border-dashed border-slate-300/80 px-3 py-4 text-center text-xs text-slate-500 dark:border-white/10 dark:text-slate-400"
             >
               {{ t('schedule.noSlots') }}
-            </div>
-
-            <div v-if="day.entries.length" class="flex flex-wrap gap-2">
-              <UBadge
-                v-for="entry in day.entries"
-                :key="`${day.key}-chip-${entry.time}-${entry.temperature}`"
-                color="neutral"
-                variant="soft"
-                class="font-mono"
-              >
-                {{ entry.time }}/{{ formatTemperature(entry.temperature) }}
-              </UBadge>
             </div>
           </div>
         </div>
