@@ -4,6 +4,7 @@ import { getSavedConnectionId, saveConnectionId } from '@/composables/useConnect
 import DevicesView from '@/views/DevicesView.vue'
 import DeviceExposesView from '@/views/DeviceExposesView.vue'
 import DeviceInfoView from '@/views/DeviceInfoView.vue'
+import DeviceRoutesView from '@/views/DeviceRoutesView.vue'
 import NetworkMapView from '@/views/NetworkMapView.vue'
 import DeviceStateView from '@/views/DeviceStateView.vue'
 import InformationView from '@/views/InformationView.vue'
@@ -58,6 +59,12 @@ const router = createRouter({
       props: true,
     },
     {
+      path: '/connections/:connectionId/devices/:id/routes',
+      name: 'device-routes',
+      component: DeviceRoutesView,
+      props: true,
+    },
+    {
       path: '/connections/:connectionId/logs',
       name: 'logs',
       component: LogsView,
@@ -100,7 +107,12 @@ router.beforeEach((to) => {
   if (!connection) {
     const connectionId = resolvePreferredConnectionId()
 
-    if (to.name === 'device-exposes' || to.name === 'device-info' || to.name === 'device-state') {
+    if (
+      to.name === 'device-exposes' ||
+      to.name === 'device-info' ||
+      to.name === 'device-state' ||
+      to.name === 'device-routes'
+    ) {
       return `/connections/${connectionId}/devices/${to.params.id}/${String(to.name).replace('device-', '')}`
     }
 

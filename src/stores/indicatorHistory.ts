@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { defineStore } from 'pinia'
 
 import { useIndicatorHistoryPreference } from '@/composables/useIndicatorHistoryPreference'
@@ -8,6 +8,8 @@ export interface IndicatorHistoryEntry {
   value: DeviceStateValue
   changedAt: number
 }
+
+const MAX_FEATURE_HISTORY = 100
 
 function isSameValue(left: DeviceStateValue | undefined, right: DeviceStateValue | undefined) {
   return left === right
@@ -44,7 +46,7 @@ export const useIndicatorHistoryStore = defineStore('indicator-history', () => {
         ...historyByConnection.value[connectionId],
         [deviceName]: {
           ...deviceHistory,
-          [feature]: [{ value, changedAt }, ...featureEntries],
+          [feature]: [{ value, changedAt }, ...featureEntries].slice(0, MAX_FEATURE_HISTORY),
         },
       },
     }
@@ -106,11 +108,22 @@ export const useIndicatorHistoryStore = defineStore('indicator-history', () => {
     }
   }
 
+  function clear() {
+    historyByConnection.value = {}
+  }
+
+  watch(enabled, (value) => {
+    if (!value) {
+      clear()
+    }
+  })
+
   return {
     enabled,
     historyByConnection,
     featureHistory,
     recordStateUpdate,
     renameDevice,
+    clear,
   }
 })

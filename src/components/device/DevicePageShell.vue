@@ -12,7 +12,7 @@ import { deviceDisplaySubtitle, deviceDisplayTitle } from '@/utils/devicePresent
 const props = defineProps<{
   connectionId: string
   id: string
-  activeTab: 'exposes' | 'info' | 'state'
+  activeTab: 'exposes' | 'info' | 'state' | 'routes'
   showHistoryToggle?: boolean
   showSmartGroupingToggle?: boolean
 }>()
@@ -49,6 +49,11 @@ const tabs = computed<NavigationMenuItem[]>(() => [
     label: t('devicePage.state'),
     to: `/connections/${props.connectionId}/devices/${props.id}/state`,
     active: props.activeTab === 'state',
+  },
+  {
+    label: t('devicePage.routes'),
+    to: `/connections/${props.connectionId}/devices/${props.id}/routes`,
+    active: props.activeTab === 'routes',
   },
 ])
 </script>

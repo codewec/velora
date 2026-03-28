@@ -1,4 +1,5 @@
 import type { LogEntry } from '@/stores/logs'
+import type { Device } from '@/types/z2m'
 import { formatBrowserDateTime } from '@/utils/dateTime'
 
 export interface ParsedTopicPayload {
@@ -132,4 +133,20 @@ export function compactDetails(entry: LogEntry) {
 
   const compactRaw = entry.raw.replaceAll('\n', ' ').replace(/\s+/g, ' ').trim()
   return compactRaw || entry.summary
+}
+
+export function logTargetsDevice(entry: LogEntry, device: Device) {
+  const topicPayload = parseTopicPayload(entry.raw)
+  const bridgeLoggingPayload = parseBridgeLoggingPayload(entry.raw)
+  const topic = topicPayload?.topic ?? ''
+  const deviceName = bridgeLoggingPayload?.deviceName ?? null
+
+  return (
+    topic === device.friendly_name ||
+    topic === device.ieee_address ||
+    topic.startsWith(`${device.friendly_name}/`) ||
+    topic.startsWith(`${device.ieee_address}/`) ||
+    deviceName === device.friendly_name ||
+    deviceName === device.ieee_address
+  )
 }

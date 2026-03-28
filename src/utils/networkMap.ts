@@ -118,6 +118,10 @@ export function formatNetworkMapLastSeen(value: number | undefined, unknownLabel
 }
 
 export function formatNetworkAddress(value: number | undefined, unknownLabel: string) {
+  if (typeof value === 'string') {
+    return value
+  }
+
   if (typeof value !== 'number') {
     return unknownLabel
   }
@@ -125,10 +129,87 @@ export function formatNetworkAddress(value: number | undefined, unknownLabel: st
   return `0x${value.toString(16).toUpperCase()}`
 }
 
+export function normalizeNetworkAddress(value: number | string | undefined) {
+  if (typeof value === 'number') {
+    return value
+  }
+
+  if (typeof value === 'string') {
+    const normalized = value.trim()
+
+    if (/^0x[0-9a-f]+$/i.test(normalized)) {
+      return Number.parseInt(normalized.slice(2), 16)
+    }
+
+    if (/^\d+$/.test(normalized)) {
+      return Number.parseInt(normalized, 10)
+    }
+  }
+
+  return null
+}
+
 export function formatLinkLabel(link: NetworkMapLink) {
   const lqi = typeof link.linkquality === 'number' ? `LQI ${link.linkquality}` : 'LQI ?'
   const routes = link.routes?.length ? ` · ${link.routes.length} routes` : ''
   return `${lqi}${routes}`
+}
+
+export function networkMapNodeByIeee(map: NetworkMapValue | null | undefined, ieeeAddr: string) {
+  return map?.nodes.find((node) => node.ieeeAddr === ieeeAddr) ?? null
+}
+
+export function networkMapNodeByAddress(
+  map: NetworkMapValue | null | undefined,
+  networkAddress: number | string | undefined,
+) {
+  const normalized = normalizeNetworkAddress(networkAddress)
+
+  if (normalized == null) {
+    return null
+  }
+
+  return map?.nodes.find((node) => node.networkAddress === normalized) ?? null
+}
+
+export function networkMapLinksForDevice(
+  map: NetworkMapValue | null | undefined,
+  ieeeAddr: string,
+) {
+  return (map?.links ?? []).filter(
+    (link) => link.source.ieeeAddr === ieeeAddr || link.target.ieeeAddr === ieeeAddr,
+  )
+}
+
+export function networkMapPeerIeee(link: NetworkMapLink, ieeeAddr: string) {
+  if (link.source.ieeeAddr === ieeeAddr) {
+    return link.target.ieeeAddr
+  }
+
+  return link.source.ieeeAddr
+}
+
+export function networkMapParentCandidate(map: NetworkMapValue | null | undefined, device: Device) {
+  if (device.type !== 'EndDevice') {
+    return null
+  }
+
+  const nodesByIeee = new Map((map?.nodes ?? []).map((node) => [node.ieeeAddr, node]))
+
+  return (
+    networkMapLinksForDevice(map, device.ieee_address)
+      .map((link) => {
+        const peerIeee = networkMapPeerIeee(link, device.ieee_address)
+        const peerNode = nodesByIeee.get(peerIeee) ?? null
+
+        return {
+          link,
+          peerNode,
+        }
+      })
+      .filter((item) => item.peerNode?.type === 'Router' || item.peerNode?.type === 'Coordinator')
+      .sort((a, b) => (b.link.linkquality ?? -1) - (a.link.linkquality ?? -1))[0] ?? null
+  )
 }
 
 export function nodeFill(type: string) {

@@ -7,7 +7,6 @@ import DevicePageShell from '@/components/device/DevicePageShell.vue'
 import { useZ2M } from '@/composables/useZ2M'
 import { useBridgeStore } from '@/stores/bridge'
 import { useDevicesStore } from '@/stores/devices'
-import { formatBrowserDateTime } from '@/utils/dateTime'
 import { OUI } from '@/utils/oui'
 import { deviceImageUrl } from '@/utils/devicePresentation'
 import { createTransactionId } from '@/utils/transaction'
@@ -57,19 +56,7 @@ function ouiVendor(ieeeAddress: string) {
   return OUI.get(ieeeAddress.slice(2, 8).toLowerCase()) || '?'
 }
 
-function formatLastSeen(timestamp: number | null) {
-  if (!timestamp) {
-    return t('app.disabled')
-  }
-
-  return formatBrowserDateTime(timestamp)
-}
-
 function metadataRows(device: Device) {
-  const reportedLastSeen = devicesStore.deviceReportedLastSeen(
-    props.connectionId,
-    device.friendly_name,
-  )
   const softwareBuild = device.software_build_id || t('app.unknown')
   const dateCode = device.date_code ? ` (${device.date_code})` : ''
 
@@ -99,7 +86,6 @@ function metadataRows(device: Device) {
     },
     { label: t('deviceInfo.mqttTopic'), value: `${baseTopic.value}/${device.friendly_name}` },
     { label: t('deviceInfo.softwareBuild'), value: `${softwareBuild}${dateCode}` },
-    { label: t('devicePage.lastSeen'), value: formatLastSeen(reportedLastSeen) },
     {
       label: t('deviceInfo.interviewCompleted'),
       value:

@@ -24,11 +24,13 @@ const historyListRef = ref<HTMLElement | null>(null)
 const formattedValue = computed(() => formatFeatureValue(props.expose, props.stateValue))
 
 const historyEntries = computed(() =>
-  indicatorHistoryStore.featureHistory(
-    props.connectionId,
-    props.deviceName,
-    featureKey(props.expose),
-  ),
+  indicatorHistoryStore.enabled
+    ? indicatorHistoryStore.featureHistory(
+        props.connectionId,
+        props.deviceName,
+        featureKey(props.expose),
+      )
+    : [],
 )
 
 const valueTrail = computed(() =>
@@ -77,6 +79,15 @@ watch(
 
     const behavior: ScrollBehavior = previousOpen ? 'smooth' : 'auto'
     historyListRef.value?.scrollTo({ top: 0, behavior })
+  },
+)
+
+watch(
+  () => indicatorHistoryStore.enabled,
+  (enabled) => {
+    if (!enabled) {
+      isHistoryModalOpen.value = false
+    }
   },
 )
 </script>

@@ -2,6 +2,7 @@
 import frontendPackageJson from '../../package.json' with { type: 'json' }
 import { computed, ref } from 'vue'
 import type { NavigationMenuItem } from '@nuxt/ui'
+import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
 import ConnectionNavbarActions from '@/components/ConnectionNavbarActions.vue'
@@ -9,6 +10,7 @@ import { getZ2MConnectionConfig, getZ2MConnectionConfigs } from '@/config/z2mCon
 import { useZ2M } from '@/composables/useZ2M'
 import { useBridgeStore } from '@/stores/bridge'
 import { useDevicesStore } from '@/stores/devices'
+import { deviceImageUrl } from '@/utils/devicePresentation'
 import {
   buildDeviceHealthRows,
   coordinatorRevisionLabel,
@@ -28,6 +30,7 @@ const props = defineProps<{
 const bridgeStore = useBridgeStore()
 const devicesStore = useDevicesStore()
 const { t } = useI18n()
+const router = useRouter()
 const z2m = computed(() => useZ2M(props.connectionId))
 const bridgeInfo = computed(() => bridgeStore.infoFor(props.connectionId))
 const bridgeHealth = computed(() => bridgeStore.healthFor(props.connectionId))
@@ -79,6 +82,10 @@ const tabs = computed<NavigationMenuItem[]>(() => [
     },
   },
 ])
+
+function openDevice(ieeeAddress: string) {
+  void router.push(`/connections/${props.connectionId}/devices/${ieeeAddress}/exposes`)
+}
 </script>
 
 <template>
@@ -337,9 +344,33 @@ const tabs = computed<NavigationMenuItem[]>(() => [
                     <tr
                       v-for="row in deviceHealthRows"
                       :key="row.device.ieee_address"
-                      class="border-t border-default"
+                      class="cursor-pointer border-t border-default transition-colors hover:bg-slate-50/80 dark:hover:bg-white/5"
+                      @click="openDevice(row.device.ieee_address)"
                     >
-                      <td class="px-4 py-3 text-highlighted">{{ row.device.friendly_name }}</td>
+                      <td class="px-4 py-3">
+                        <div class="flex min-w-0 items-center gap-3">
+                          <div
+                            class="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-100/80 dark:border-white/10 dark:bg-slate-900/70"
+                          >
+                            <img
+                              v-if="deviceImageUrl(row.device)"
+                              :src="deviceImageUrl(row.device) || undefined"
+                              :alt="row.device.friendly_name"
+                              class="h-full w-full object-cover"
+                            />
+                            <UIcon v-else name="i-lucide-cpu" class="text-xl text-muted" />
+                          </div>
+
+                          <div class="min-w-0">
+                            <p class="truncate text-sm font-medium text-highlighted">
+                              {{ row.device.description || row.device.friendly_name }}
+                            </p>
+                            <p class="truncate text-xs text-muted">
+                              {{ row.device.friendly_name }}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
                       <td class="px-4 py-3 font-mono text-muted">{{ row.device.ieee_address }}</td>
                       <td class="px-4 py-3 text-highlighted">{{ row.health.messages ?? 0 }}</td>
                       <td

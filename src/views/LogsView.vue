@@ -5,9 +5,10 @@ import { useI18n } from 'vue-i18n'
 
 import ConnectionNavbarActions from '@/components/ConnectionNavbarActions.vue'
 import { useZ2M } from '@/composables/useZ2M'
+import { useDevicesStore } from '@/stores/devices'
 import { useLogDetailsStore } from '@/stores/logDetails'
 import { useLogsStore, type LogLevel } from '@/stores/logs'
-import { compactDetails, rawLine } from '@/utils/logPresentation'
+import { compactDetails, logTargetsDevice, rawLine } from '@/utils/logPresentation'
 
 const props = defineProps<{
   connectionId: string
@@ -15,9 +16,11 @@ const props = defineProps<{
 
 const z2m = computed(() => useZ2M(props.connectionId))
 const logsStore = useLogsStore()
+const devicesStore = useDevicesStore()
 const logs = computed(() => logsStore.logsFor(props.connectionId))
 const rawMode = ref(false)
 const selectedLevel = ref<'all' | LogLevel>('all')
+const selectedDeviceId = ref<'all' | string>('all')
 const followLogs = ref(true)
 const logContainer = ref<HTMLElement | null>(null)
 const { t } = useI18n()
@@ -31,6 +34,23 @@ const levelOptions = computed(() => [
   { label: t('logsPage.levelInfo'), value: 'info' as const },
   { label: t('logsPage.levelDebug'), value: 'debug' as const },
 ])
+
+const deviceOptions = computed(() => [
+  { label: t('logsPage.deviceAll'), description: '', value: 'all' as const },
+  ...devicesStore.devicesFor(props.connectionId).map((device) => ({
+    label: device.description?.trim() || device.friendly_name,
+    description: device.friendly_name,
+    value: device.ieee_address,
+  })),
+])
+
+const selectedDevice = computed(() =>
+  selectedDeviceId.value === 'all'
+    ? null
+    : (devicesStore
+        .devicesFor(props.connectionId)
+        .find((device) => device.ieee_address === selectedDeviceId.value) ?? null),
+)
 
 function badgeColor(level: string) {
   if (level === 'error') return 'error'
@@ -47,9 +67,17 @@ function rawClass(level: string) {
 }
 
 const filteredLogs = computed(() =>
-  selectedLevel.value === 'all'
-    ? logs.value
-    : logs.value.filter((entry) => entry.level === selectedLevel.value),
+  logs.value.filter((entry) => {
+    if (selectedLevel.value !== 'all' && entry.level !== selectedLevel.value) {
+      return false
+    }
+
+    if (selectedDevice.value && !logTargetsDevice(entry, selectedDevice.value)) {
+      return false
+    }
+
+    return true
+  }),
 )
 
 const rawEntries = computed(() =>
@@ -125,6 +153,12 @@ function clearLogs() {
   z2m.value.clearLogs()
 }
 
+function resetFilters() {
+  selectedDeviceId.value = 'all'
+  selectedLevel.value = 'all'
+  rawMode.value = false
+}
+
 function openLogPreferences() {
   void router.push(`/connections/${props.connectionId}/preferences?tab=logs`)
 }
@@ -156,6 +190,17 @@ function openLogPreferences() {
         <template #right>
           <div class="flex items-center gap-3">
             <USelect
+              v-model="selectedDeviceId"
+              :items="deviceOptions"
+              value-key="value"
+              size="sm"
+              class="w-56"
+            >
+              <template #item-description="{ item }">
+                {{ item.description }}
+              </template>
+            </USelect>
+            <USelect
               v-model="selectedLevel"
               :items="levelOptions"
               value-key="value"
@@ -168,6 +213,13 @@ function openLogPreferences() {
               icon="i-lucide-sliders-horizontal"
               :label="t('app.settings')"
               @click="openLogPreferences"
+            />
+            <UButton
+              color="neutral"
+              variant="ghost"
+              icon="i-lucide-rotate-ccw"
+              :label="t('logsPage.resetFilters')"
+              @click="resetFilters"
             />
             <div class="flex items-center gap-2">
               <span class="text-sm text-muted">{{ t('logsPage.raw') }}</span>
