@@ -13,6 +13,9 @@ arch:
   - amd64
   - aarch64
 options:
-  z2m_targets_json: ""
+  z2m_targets: []
 schema:
-  z2m_targets_json: str?
+  z2m_targets:
+    - id: str
+      label: str?
+      target: url

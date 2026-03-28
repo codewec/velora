@@ -10,25 +10,31 @@ Velora is an alternative Zigbee2MQTT web UI that can run inside Home Assistant t
 
 ## Configuration
 
-The add-on accepts the same runtime JSON model as the standalone container, but because Home Assistant add-on options are form-based, the values are entered as JSON strings.
+The add-on uses native Home Assistant YAML options.
 
-### `z2m_targets_json`
+### `z2m_targets`
 
 List of Zigbee2MQTT targets that Velora should expose through the Home Assistant ingress WebSocket proxy.
 
 Single instance example:
 
-```json
-[{"id":"main","label":"Main","target":"http://zigbee2mqtt:8080"}]
+```yaml
+z2m_targets:
+  - id: main
+    label: Main
+    target: http://zigbee2mqtt:8080
 ```
 
 Multiple instances example:
 
-```json
-[
-  {"id":"main","label":"Main","target":"http://zigbee2mqtt-main:8099"},
-  {"id":"garage","label":"Garage","target":"http://zigbee2mqtt-garage:8099"}
-]
+```yaml
+z2m_targets:
+  - id: main
+    label: Main
+    target: http://zigbee2mqtt-main:8099
+  - id: garage
+    label: Garage
+    target: http://zigbee2mqtt-garage:8099
 ```
 
 Inside the Home Assistant add-on, each target is converted to a frontend connection URL like:
@@ -49,7 +55,7 @@ Velora does not talk to Zigbee2MQTT through the browser-facing Home Assistant in
 
 In practice the flow is:
 
-1. `z2m_targets_json` contains a Zigbee2MQTT target such as `http://45df7312-zigbee2mqtt:8099`
+1. `z2m_targets` contains a Zigbee2MQTT target such as `http://45df7312-zigbee2mqtt:8099`
 2. Velora converts it to the frontend connection `45df7312-zigbee2mqtt:8099/api`
 3. the browser opens `./ws-proxy/45df7312-zigbee2mqtt:8099/api`
 4. the Velora add-on proxies that WebSocket to `http://45df7312-zigbee2mqtt:8099/api`
@@ -76,11 +82,14 @@ and the internal host typically becomes the same value with underscores replaced
 
 So the matching Velora target becomes:
 
-```json
-[{"id":"main","label":"Main","target":"http://45df7312-zigbee2mqtt:8099"}]
+```yaml
+z2m_targets:
+  - id: main
+    label: Main
+    target: http://45df7312-zigbee2mqtt:8099
 ```
 
-This is the value that should be placed into `z2m_targets_json`.
+This is the value that should be placed into `z2m_targets`.
 
 ## Troubleshooting
 
@@ -111,7 +120,5 @@ For Home Assistant OS or Supervised installations, the cleanest approach is:
 
 ## Notes
 
-- All JSON options are validated during add-on startup.
-- Invalid JSON prevents the add-on from starting.
 - This add-on package assumes the standalone image is available at `ghcr.io/codewec/velora:dev` unless `VELORA_IMAGE` is overridden during the add-on build.
 - The device list supports name-based room grouping with the default naming pattern `{room}_{type}_{placement}`.

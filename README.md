@@ -163,11 +163,11 @@ That keeps the add-on packaging small and lets the standalone pipeline remain th
 
 ### Add-on configuration
 
-The add-on uses the same runtime JSON contract as the standalone container, exposed as Home Assistant add-on string options:
+The add-on exposes a native Home Assistant YAML list option:
 
-- `z2m_targets_json`
+- `z2m_targets`
 
-The recommended add-on setup is to provide `z2m_targets_json`. The add-on then derives the ingress-safe frontend connections automatically.
+The recommended add-on setup is to provide one or more `z2m_targets`. The add-on then derives the ingress-safe frontend connections automatically.
 
 ### How the Home Assistant add-on connects to Zigbee2MQTT
 
@@ -188,11 +188,20 @@ then:
 So the Velora add-on option should be:
 
 ```yaml
-z2m_targets_json: "[{\"id\":\"main\",\"label\":\"Main\",\"target\":\"http://45df7312-zigbee2mqtt:8099\"}]"
+z2m_targets:
+  - id: main
+    label: Main
+    target: http://45df7312-zigbee2mqtt:8099
 ```
 
 Multiple instances example:
 
 ```yaml
-z2m_targets_json: "[{\"id\":\"main\",\"label\":\"Main\",\"target\":\"http://45df7312-zigbee2mqtt:8099\"},{\"id\":\"garage\",\"label\":\"Garage\",\"target\":\"http://45df7312-zigbee2mqtt-garage:8099\"}]"
+z2m_targets:
+  - id: main
+    label: Main
+    target: http://45df7312-zigbee2mqtt:8099
+  - id: garage
+    label: Garage
+    target: http://45df7312-zigbee2mqtt-garage:8099
 ```

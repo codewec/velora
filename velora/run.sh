@@ -4,22 +4,7 @@ set -euo pipefail
 runtime_config_path="/srv/runtime-config.js"
 nginx_config_path="/tmp/nginx.conf"
 
-z2m_targets_json="$(bashio::config 'z2m_targets_json')"
-
-validate_json() {
-  local value="$1"
-  local label="$2"
-
-  if [ -n "$value" ] && ! printf '%s' "$value" | jq -e . >/dev/null 2>&1; then
-    bashio::log.fatal "$label must be valid JSON"
-    exit 1
-  fi
-}
-
-# Home Assistant add-on options are stored as strings. We validate them before
-# generating the runtime frontend config so broken JSON fails fast during
-# startup instead of surfacing later as a blank page or broken proxy.
-validate_json "$z2m_targets_json" "z2m_targets_json"
+z2m_targets_json="$(bashio::config 'z2m_targets')"
 
 if [ -n "$z2m_targets_json" ] && [ "$z2m_targets_json" != "[]" ]; then
   # Home Assistant uses the Windfront-style `ws-proxy/<host:port/path>`
