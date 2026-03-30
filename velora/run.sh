@@ -3,8 +3,16 @@ set -euo pipefail
 
 runtime_config_path="/srv/runtime-config.js"
 nginx_config_path="/tmp/nginx.conf"
+options_path="/data/options.json"
 
-z2m_targets_json="$(bashio::config 'z2m_targets')"
+if [ -f "$options_path" ]; then
+  if ! z2m_targets_json="$(jq -c '.z2m_targets // []' "$options_path")"; then
+    bashio::log.fatal "Failed to read z2m_targets from add-on options"
+    exit 1
+  fi
+else
+  z2m_targets_json="[]"
+fi
 
 if [ -n "$z2m_targets_json" ] && [ "$z2m_targets_json" != "[]" ]; then
   # Home Assistant uses the Windfront-style `ws-proxy/<host:port/path>`
