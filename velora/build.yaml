@@ -2,4 +2,4 @@ build_from:
   amd64: ghcr.io/home-assistant/amd64-base:3.22
   aarch64: ghcr.io/home-assistant/aarch64-base:3.22
 args:
-  VELORA_IMAGE: ghcr.io/codewec/velora:v0.0.7
+  VELORA_IMAGE: ghcr.io/codewec/velora:v0.0.8

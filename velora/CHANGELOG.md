@@ -1,6 +1,22 @@
 # Changelog
 
 
+## v0.0.8
+
+[compare changes](https://github.com/codewec/velora/compare/v0.0.7...v0.0.8)
+
+### 🩹 Fixes
+
+- Multiple instance select ([ec367a5](https://github.com/codewec/velora/commit/ec367a5))
+
+### 🏡 Chore
+
+- **release:** V0.0.7 ([a6dea4d](https://github.com/codewec/velora/commit/a6dea4d))
+
+### ❤️ Contributors
+
+- Codewec
+
 ## v0.0.7
 
 [compare changes](https://github.com/codewec/velora/compare/v0.0.6...v0.0.7)
