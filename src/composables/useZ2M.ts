@@ -63,6 +63,16 @@ function normalizeMessage(data: unknown): Z2MMessage | null {
   }
 }
 
+function getHaIngressBase(): string {
+  const { pathname } = window.location
+  // HA Ingress URLs follow the /api/hassio_ingress/{token}/ pattern.
+  // We must use only that prefix — not the full Vue Router path — so that
+  // ws-proxy requests land at the nginx /ws-proxy/ location regardless of
+  // which route the user is currently viewing.
+  const match = /^(\/api\/hassio_ingress\/[^/]+\/)/.exec(pathname)
+  return match?.[1] ?? (pathname.endsWith('/') ? pathname : `${pathname}/`)
+}
+
 function buildSocketUrl(connection: Z2MConnectionConfig): string {
   const rawUrl = connection.url
 
@@ -77,7 +87,7 @@ function buildSocketUrl(connection: Z2MConnectionConfig): string {
     }
 
     const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
-    const ingressBase = `${window.location.pathname}${window.location.pathname.endsWith('/') ? '' : '/'}`
+    const ingressBase = getHaIngressBase()
 
     // Home Assistant ingress exposes a ws-proxy path that Windfront also uses.
     // We store proxy connections as `host:port/api` and expand them to the
